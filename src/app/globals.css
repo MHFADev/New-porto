@@ -1,26 +1,151 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-manrope);
+  --font-mono: var(--font-jet);
+  --font-display: var(--font-space);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --color-surface: #171113;
+  --color-surface-dim: #0e0a0c;
+  --color-surface-bright: #251b1e;
+  --color-surface-container-low: #1a1416;
+  --color-surface-container: #211a1c;
+  --color-surface-container-high: #292023;
+  --color-on-surface: #F1EBE1;
+  --color-on-surface-variant: #B4A89D;
+  --color-primary: #F1EBE1;
+  --color-on-primary: #171113;
+  --color-primary-container: #E8452B;
+  --color-on-primary-container: #FFF3ED;
+  --color-secondary: #C9714F;
+  --color-on-secondary: #171113;
+  --color-outline: #4a3f3e;
+  --color-cotton: #F1EBE1;
+  --color-active: #4ADE80;
+  --color-line: #F1EBE10F;
+  --color-line-strong: #F1EBE128;
+
+  --animate-blink: blink 1.1s step-end infinite;
+  --animate-float: float 8s ease-in-out infinite;
+}
+
+[data-theme="light"] {
+  --color-surface: #F4EFE3;
+  --color-surface-dim: #E9E2D2;
+  --color-surface-bright: #FDFBF4;
+  --color-surface-container-low: #EDE7D8;
+  --color-surface-container: #E9E2D1;
+  --color-surface-container-high: #DFD7C4;
+  --color-on-surface: #211A17;
+  --color-on-surface-variant: #665B52;
+  --color-primary: #211A17;
+  --color-on-primary: #F4EFE3;
+  --color-primary-container: #B42318;
+  --color-on-primary-container: #FFF6F0;
+  --color-secondary: #9A563A;
+  --color-on-secondary: #FFF6F0;
+  --color-outline: #C7BCAE;
+  --color-cotton: #211A17;
+  --color-active: #15803D;
+  --color-line: #211A1714;
+  --color-line-strong: #211A172E;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  overflow-x: hidden;
+}
+
+*, *::before, *::after {
+  transition:
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+::selection {
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--color-surface-dim); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-container);
+  border-radius: 9999px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary-container);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes scrollline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-16px); }
+}
+
+.reveal-item { opacity: 0; }
+
+.mask-x {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+
+.mask-fade-b {
+  -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent);
+  mask-image: linear-gradient(180deg, #000 55%, transparent);
+}
+
+.text-gradient {
+  background: linear-gradient(100deg, var(--color-primary-container) 10%, var(--color-secondary) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.grid-bg {
+  background-image:
+    linear-gradient(to right, var(--color-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-line) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.grid-fade {
+  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 0%, #000 35%, transparent 78%);
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 0%, #000 35%, transparent 78%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
