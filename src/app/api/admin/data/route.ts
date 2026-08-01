@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
-import { githubFetch, imageRepoConfig, projectPath, logoPath, listImages, imageUrl, readMeta, writeMeta } from '@/lib/images';
+import { githubFetch, imageRepoConfig, projectPath, imageUrl, readMeta, writeMeta } from '@/lib/images';
 import type { Meta } from '@/lib/images';
+import { TECH_ICONS, iconUrl } from '@/lib/tech';
 import { isAuthed, readCookie } from '@/lib/auth';
 
 const IMAGE_EXT = /\.(jpe?g|png|webp|avif|gif|svg)$/i;
@@ -28,12 +29,8 @@ export async function GET(req: NextRequest) {
   }
   try {
     const meta = await readMeta();
-    const logos = (await listImages(logoPath())).map((name) => ({
-      name,
-      url: imageUrl(logoPath(), name),
-      selected: meta.techStack.includes(name),
-    }));
-    return Response.json({ projects: await projectsWithMeta(), logos, techStack: meta.techStack });
+    const icons = TECH_ICONS.map((i) => ({ ...i, url: iconUrl(i.slug) }));
+    return Response.json({ projects: await projectsWithMeta(), icons, techStack: meta.techStack });
   } catch (e) {
     return Response.json({ error: (e as Error).message }, { status: 500 });
   }
@@ -50,7 +47,11 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(projects)) {
     return Response.json({ error: 'invalid body' }, { status: 400 });
   }
-  const meta: Meta = { projects: {}, techStack: Array.isArray(techStack) ? techStack : [] };
+  const validSlugs = new Set(TECH_ICONS.map((i) => i.slug));
+  const meta: Meta = {
+    projects: {},
+    techStack: (Array.isArray(techStack) ? techStack : []).filter((s) => validSlugs.has(s)),
+  };
   for (const p of projects) {
     if (p.name) meta.projects[p.name] = { title: p.title ?? '', desc: p.desc ?? '' };
   }

@@ -20,10 +20,6 @@ export function projectPath() {
   return process.env.IMAGE_PROJECT_PATH?.replace(/^\/+|\/+$/g, '') || 'project';
 }
 
-export function logoPath() {
-  return process.env.IMAGE_LOGO_PATH?.replace(/^\/+|\/+$/g, '') || 'logo';
-}
-
 function headers(cfg: RepoConfig, accept: string) {
   return {
     Authorization: `Bearer ${cfg.pat}`,
@@ -79,15 +75,6 @@ export async function writeMeta(meta: Meta) {
     return { ok: false, error: err?.message || `GitHub ${res.status}` };
   }
   return { ok: true };
-}
-
-export async function listImages(dir: string) {
-  const cfg = imageRepoConfig();
-  if (!cfg) return [];
-  const res = await githubFetch(cfg, dir, 'json');
-  if (!res.ok) return [];
-  const items = (await res.json()) as { name: string; type: string }[];
-  return items.filter((f) => f.type === 'file').map((f) => f.name);
 }
 
 export function imageUrl(...segments: string[]) {

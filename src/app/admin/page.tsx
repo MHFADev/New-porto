@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 type Project = { name: string; url: string; title: string; desc: string };
-type Logo = { name: string; url: string };
+type Icon = { slug: string; label: string; url: string };
 type State = 'loading' | 'auth' | 'ready';
 
 export default function AdminPage() {
   const [state, setState] = useState<State>('loading');
   const [projects, setProjects] = useState<Project[]>([]);
-  const [logos, setLogos] = useState<Logo[]>([]);
+  const [icons, setIcons] = useState<Icon[]>([]);
   const [techStack, setTechStack] = useState<string[]>([]);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -27,9 +27,9 @@ export default function AdminPage() {
       setState('auth');
       return;
     }
-    const data = (await res.json()) as { projects: Project[]; logos: Logo[]; techStack: string[] };
+    const data = (await res.json()) as { projects: Project[]; icons: Icon[]; techStack: string[] };
     setProjects(data.projects);
-    setLogos(data.logos);
+    setIcons(data.icons);
     setTechStack(data.techStack);
     setState('ready');
   }
@@ -73,8 +73,8 @@ export default function AdminPage() {
     alert('Saved');
   }
 
-  function toggleLogo(name: string) {
-    setTechStack((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
+  function toggleIcon(slug: string) {
+    setTechStack((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]));
   }
 
   if (state === 'loading') {
@@ -129,19 +129,19 @@ export default function AdminPage() {
       <section className="mb-10">
         <h2 className="font-display text-lg font-semibold text-cotton mb-1">Tech Stack</h2>
         <p className="text-sm text-on-surface-variant mb-4">
-          Pick logos shown to visitors. {techStack.length} selected.
+          Pick technologies shown to visitors. {techStack.length} selected.
         </p>
-        {logos.length === 0 ? (
-          <p className="text-sm text-on-surface-variant/60 font-mono">No logos found in repo {`logo/`} folder.</p>
+        {icons.length === 0 ? (
+          <p className="text-sm text-on-surface-variant/60 font-mono">No icons available.</p>
         ) : (
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
-            {logos.map((l) => {
-              const active = techStack.includes(l.name);
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+            {icons.map((ic) => {
+              const active = techStack.includes(ic.slug);
               return (
                 <button
-                  key={l.name}
-                  onClick={() => toggleLogo(l.name)}
-                  title={l.name}
+                  key={ic.slug}
+                  onClick={() => toggleIcon(ic.slug)}
+                  title={ic.label}
                   className={`relative rounded-xl border p-2 aspect-square flex items-center justify-center transition-colors ${
                     active
                       ? 'border-primary-container bg-primary-container/10'
@@ -149,7 +149,7 @@ export default function AdminPage() {
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- local thumbnail */}
-                  <img src={l.url} alt={l.name} className="max-h-full max-w-full object-contain" />
+                  <img src={ic.url} alt={ic.label} className="max-h-full max-w-full object-contain" />
                   {active && (
                     <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary-container text-on-primary-container text-xs flex items-center justify-center">
                       ✓

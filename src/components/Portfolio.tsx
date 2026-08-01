@@ -899,32 +899,32 @@ function Skills() {
 }
 
 function TechStack() {
-  const [logos, setLogos] = useState<{ name: string; url: string }[] | null>(null);
+  const [icons, setIcons] = useState<{ slug: string; label: string; url: string }[] | null>(null);
 
   useEffect(() => {
     let live = true;
     fetch('/api/techstack')
       .then((r) => (r.ok ? r.json() : []))
-      .then((list) => live && setLogos(Array.isArray(list) ? list : []))
-      .catch(() => live && setLogos([]));
+      .then((list) => live && setIcons(Array.isArray(list) ? list : []))
+      .catch(() => live && setIcons([]));
     return () => {
       live = false;
     };
   }, []);
 
-  if (!logos?.length) return null;
+  if (!icons?.length) return null;
 
   return (
     <Reveal className="mt-14" delay={120}>
       <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-        {logos.map((l) => (
+        {icons.map((ic) => (
           <div
-            key={l.name}
-            title={l.name.replace(/\.[^.]+$/, '')}
+            key={ic.slug}
+            title={ic.label}
             className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border border-line-strong bg-surface-container/60 p-3 flex items-center justify-center hover:border-primary-container/50 transition-colors"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- remote images w/ runtime fallback */}
-            <img src={l.url} alt={l.name.replace(/\.[^.]+$/, '')} className="max-h-full max-w-full object-contain" loading="lazy" />
+            <img src={ic.url} alt={ic.label} className="max-h-full max-w-full object-contain" loading="lazy" />
           </div>
         ))}
       </div>
