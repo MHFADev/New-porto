@@ -18,6 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://hilmi.my.id"),
   title: "M. Hilmi F.A. | IT Support & Developer",
   description: "Portfolio — IT Support specialist & full-stack developer based in Kendari, Indonesia.",
 };

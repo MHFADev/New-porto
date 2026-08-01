@@ -1,5 +1,7 @@
 const GH_API = 'https://api.github.com/repos';
 
+export type Meta = Record<string, { title?: string; desc?: string }>;
+
 export function imageRepoConfig() {
   const url = process.env.IMAGE_REPO_URL;
   const pat = process.env.IMAGE_REPO_PAT;
@@ -8,14 +10,59 @@ export function imageRepoConfig() {
   return { owner: m[1], repo: m[2], pat };
 }
 
+export function projectPath() {
+  return process.env.IMAGE_PROJECT_PATH?.replace(/^\/+|\/+$/g, '') || 'project';
+}
+
+function headers(cfg: { owner: string; repo: string; pat: string }, accept: string) {
+  return {
+    Authorization: `Bearer ${cfg.pat}`,
+    Accept: accept,
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
+}
+
 export async function githubFetch(cfg: { owner: string; repo: string; pat: string }, path: string, accept: 'raw' | 'json') {
   const encoded = path.split('/').map(encodeURIComponent).join('/');
   return fetch(`${GH_API}/${cfg.owner}/${cfg.repo}/contents/${encoded}`, {
-    headers: {
-      Authorization: `Bearer ${cfg.pat}`,
-      Accept: accept === 'raw' ? 'application/vnd.github.raw' : 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
+    headers: headers(cfg, accept === 'raw' ? 'application/vnd.github.raw' : 'application/vnd.github+json'),
     cache: 'no-store',
   });
+}
+
+export async function readMeta(): Promise<Meta | null> {
+  const cfg = imageRepoConfig();
+  if (!cfg) return null;
+  const res = await githubFetch(cfg, `${projectPath()}/meta.json`, 'json');
+  if (!res.ok) return null;
+  const data = (await res.json()) as { content: string; sha: string };
+  return JSON.parse(Buffer.from(data.content, 'base64').toString('utf8')) as Meta;
+}
+
+export async function writeMeta(meta: Meta) {
+  const cfg = imageRepoConfig();
+  if (!cfg) return { ok: false, error: 'not configured' };
+  const path = `${projectPath()}/meta.json`;
+  const encoded = path.split('/').map(encodeURIComponent).join('/');
+  const existing = await fetch(`${GH_API}/${cfg.owner}/${cfg.repo}/contents/${encoded}`, {
+    headers: headers(cfg, 'application/vnd.github+json'),
+    cache: 'no-store',
+  });
+  const sha = existing.ok ? ((await existing.json()) as { sha: string }).sha : undefined;
+  const body: Record<string, string> = {
+    message: 'Update project metadata',
+    content: Buffer.from(JSON.stringify(meta, null, 2)).toString('base64'),
+  };
+  if (sha) body.sha = sha;
+  const res = await fetch(`${GH_API}/${cfg.owner}/${cfg.repo}/contents/${encoded}`, {
+    method: 'PUT',
+    headers: headers(cfg, 'application/vnd.github+json'),
+    body: JSON.stringify(body),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => null)) as { message?: string } | null;
+    return { ok: false, error: err?.message || `GitHub ${res.status}` };
+  }
+  return { ok: true };
 }

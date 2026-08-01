@@ -904,8 +904,10 @@ function toTitle(name: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+type Project = { name: string; url: string; title: string; desc: string };
+
 function Projects() {
-  const [projects, setProjects] = useState<{ name: string; url: string }[] | null>(null);
+  const [projects, setProjects] = useState<Project[] | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -942,9 +944,9 @@ function Projects() {
                 <div className="relative rounded-2xl overflow-hidden border border-line-strong bg-surface-container aspect-[16/11]">
                   <SmartImage
                     src={p.url}
-                    alt={`${toTitle(p.name)} preview`}
+                    alt={`${p.title || toTitle(p.name)} preview`}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                    fallback={<ProjectFallback name={toTitle(p.name)} />}
+                    fallback={<ProjectFallback name={p.title || toTitle(p.name)} />}
                   />
                   <div
                     className="absolute inset-0 bg-gradient-to-t from-surface/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
@@ -960,8 +962,11 @@ function Projects() {
                   <span>{p.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, '_').toLowerCase()}</span>
                 </div>
                 <h3 className="font-display font-semibold tracking-[-0.02em] text-2xl sm:text-3xl text-cotton mb-4">
-                  {toTitle(p.name)}
+                  {p.title || toTitle(p.name)}
                 </h3>
+                {p.desc && (
+                  <p className="text-on-surface-variant/90 leading-relaxed mb-7 max-w-md">{p.desc}</p>
+                )}
               </div>
             </article>
           </Reveal>
