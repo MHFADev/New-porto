@@ -1,8 +1,14 @@
 const GH_API = 'https://api.github.com/repos';
 
-export type Meta = Record<string, { title?: string; desc?: string }>;
+export type ProjectMeta = { title?: string; desc?: string };
+export type Meta = {
+  projects: Record<string, ProjectMeta>;
+  techStack: string[];
+};
 
-export function imageRepoConfig() {
+export type RepoConfig = { owner: string; repo: string; pat: string };
+
+export function imageRepoConfig(): RepoConfig | null {
   const url = process.env.IMAGE_REPO_URL;
   const pat = process.env.IMAGE_REPO_PAT;
   const m = url?.match(/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/);
@@ -14,7 +20,11 @@ export function projectPath() {
   return process.env.IMAGE_PROJECT_PATH?.replace(/^\/+|\/+$/g, '') || 'project';
 }
 
-function headers(cfg: { owner: string; repo: string; pat: string }, accept: string) {
+export function logoPath() {
+  return process.env.IMAGE_LOGO_PATH?.replace(/^\/+|\/+$/g, '') || 'logo';
+}
+
+function headers(cfg: RepoConfig, accept: string) {
   return {
     Authorization: `Bearer ${cfg.pat}`,
     Accept: accept,
@@ -22,7 +32,7 @@ function headers(cfg: { owner: string; repo: string; pat: string }, accept: stri
   };
 }
 
-export async function githubFetch(cfg: { owner: string; repo: string; pat: string }, path: string, accept: 'raw' | 'json') {
+export async function githubFetch(cfg: RepoConfig, path: string, accept: 'raw' | 'json') {
   const encoded = path.split('/').map(encodeURIComponent).join('/');
   return fetch(`${GH_API}/${cfg.owner}/${cfg.repo}/contents/${encoded}`, {
     headers: headers(cfg, accept === 'raw' ? 'application/vnd.github.raw' : 'application/vnd.github+json'),
@@ -30,13 +40,17 @@ export async function githubFetch(cfg: { owner: string; repo: string; pat: strin
   });
 }
 
-export async function readMeta(): Promise<Meta | null> {
+export async function readMeta(): Promise<Meta> {
   const cfg = imageRepoConfig();
-  if (!cfg) return null;
+  if (!cfg) return { projects: {}, techStack: [] };
   const res = await githubFetch(cfg, `${projectPath()}/meta.json`, 'json');
-  if (!res.ok) return null;
-  const data = (await res.json()) as { content: string; sha: string };
-  return JSON.parse(Buffer.from(data.content, 'base64').toString('utf8')) as Meta;
+  if (!res.ok) return { projects: {}, techStack: [] };
+  const data = (await res.json()) as { content: string };
+  const parsed = JSON.parse(Buffer.from(data.content, 'base64').toString('utf8')) as Partial<Meta>;
+  return {
+    projects: parsed.projects ?? {},
+    techStack: Array.isArray(parsed.techStack) ? parsed.techStack : [],
+  };
 }
 
 export async function writeMeta(meta: Meta) {
@@ -65,4 +79,17 @@ export async function writeMeta(meta: Meta) {
     return { ok: false, error: err?.message || `GitHub ${res.status}` };
   }
   return { ok: true };
+}
+
+export async function listImages(dir: string) {
+  const cfg = imageRepoConfig();
+  if (!cfg) return [];
+  const res = await githubFetch(cfg, dir, 'json');
+  if (!res.ok) return [];
+  const items = (await res.json()) as { name: string; type: string }[];
+  return items.filter((f) => f.type === 'file').map((f) => f.name);
+}
+
+export function imageUrl(...segments: string[]) {
+  return `/api/images/${segments.map(encodeURIComponent).join('/')}`;
 }

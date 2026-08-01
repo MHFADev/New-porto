@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 type Project = { name: string; url: string; title: string; desc: string };
+type Logo = { name: string; url: string };
 type State = 'loading' | 'auth' | 'ready';
 
 export default function AdminPage() {
   const [state, setState] = useState<State>('loading');
   const [projects, setProjects] = useState<Project[]>([]);
+  const [logos, setLogos] = useState<Logo[]>([]);
+  const [techStack, setTechStack] = useState<string[]>([]);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -24,13 +27,15 @@ export default function AdminPage() {
       setState('auth');
       return;
     }
-    const data = (await res.json()) as { projects: Project[] };
+    const data = (await res.json()) as { projects: Project[]; logos: Logo[]; techStack: string[] };
     setProjects(data.projects);
+    setLogos(data.logos);
+    setTechStack(data.techStack);
     setState('ready');
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- async load, guarded by live flag in load()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async load
     load();
   }, []);
 
@@ -56,7 +61,7 @@ export default function AdminPage() {
     const res = await fetch('/api/admin/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projects }),
+      body: JSON.stringify({ projects, techStack }),
     });
     setSaving(false);
     if (!res.ok) {
@@ -66,6 +71,10 @@ export default function AdminPage() {
     }
     setError('');
     alert('Saved');
+  }
+
+  function toggleLogo(name: string) {
+    setTechStack((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
   }
 
   if (state === 'loading') {
@@ -78,7 +87,7 @@ export default function AdminPage() {
         <form onSubmit={login} className="w-full max-w-sm space-y-4">
           <div>
             <h1 className="font-display text-2xl font-semibold text-cotton">Admin</h1>
-            <p className="text-sm text-on-surface-variant mt-1">Enter password to manage projects.</p>
+            <p className="text-sm text-on-surface-variant mt-1">Enter password to manage content.</p>
           </div>
           <input
             type="password"
@@ -104,11 +113,8 @@ export default function AdminPage() {
     <Shell>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-cotton">Projects</h1>
-          <p className="text-sm text-on-surface-variant mt-1">
-            {projects.length} image{projects.length === 1 ? '' : 's'} in repo. Title & description go to{' '}
-            <code className="font-mono text-primary-container">meta.json</code>.
-          </p>
+          <h1 className="font-display text-2xl font-semibold text-cotton">Admin</h1>
+          <p className="text-sm text-on-surface-variant mt-1">Manage projects & tech stack logos.</p>
         </div>
         <Link
           href="/"
@@ -120,33 +126,77 @@ export default function AdminPage() {
 
       {error && <p className="text-sm text-active mb-4">{error}</p>}
 
-      <div className="space-y-4">
-        {projects.map((p) => (
-          <div
-            key={p.name}
-            className="rounded-2xl border border-line-strong bg-surface-container/60 p-4 grid md:grid-cols-[120px_1fr] gap-4"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element -- local thumbnail */}
-            <img src={p.url} alt="" className="w-full aspect-[16/11] object-cover rounded-lg border border-line-strong" />
-            <div className="space-y-3">
-              <input
-                value={p.title}
-                onChange={(e) => setProjects((prev) => prev.map((x) => (x.name === p.name ? { ...x, title: e.target.value } : x)))}
-                placeholder={p.name.replace(/\.[^.]+$/, '')}
-                className="w-full rounded-lg border border-line-strong bg-surface-container px-3 py-2 text-sm font-medium text-cotton placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary-container/60"
-              />
-              <textarea
-                value={p.desc}
-                onChange={(e) => setProjects((prev) => prev.map((x) => (x.name === p.name ? { ...x, desc: e.target.value } : x)))}
-                placeholder="Description"
-                rows={2}
-                className="w-full rounded-lg border border-line-strong bg-surface-container px-3 py-2 text-sm text-on-surface-variant focus:outline-none focus:border-primary-container/60 resize-none"
-              />
-              <p className="font-mono text-[10px] text-on-surface-variant/50">{p.name}</p>
-            </div>
+      <section className="mb-10">
+        <h2 className="font-display text-lg font-semibold text-cotton mb-1">Tech Stack</h2>
+        <p className="text-sm text-on-surface-variant mb-4">
+          Pick logos shown to visitors. {techStack.length} selected.
+        </p>
+        {logos.length === 0 ? (
+          <p className="text-sm text-on-surface-variant/60 font-mono">No logos found in repo {`logo/`} folder.</p>
+        ) : (
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+            {logos.map((l) => {
+              const active = techStack.includes(l.name);
+              return (
+                <button
+                  key={l.name}
+                  onClick={() => toggleLogo(l.name)}
+                  title={l.name}
+                  className={`relative rounded-xl border p-2 aspect-square flex items-center justify-center transition-colors ${
+                    active
+                      ? 'border-primary-container bg-primary-container/10'
+                      : 'border-line-strong bg-surface-container/60 hover:border-outline'
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- local thumbnail */}
+                  <img src={l.url} alt={l.name} className="max-h-full max-w-full object-contain" />
+                  {active && (
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary-container text-on-primary-container text-xs flex items-center justify-center">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        )}
+      </section>
+
+      <section className="mb-6">
+        <h2 className="font-display text-lg font-semibold text-cotton mb-1">Projects</h2>
+        <p className="text-sm text-on-surface-variant mb-4">
+          {projects.length} image{projects.length === 1 ? '' : 's'} in repo. Title & description go to{' '}
+          <code className="font-mono text-primary-container">meta.json</code>.
+        </p>
+
+        <div className="space-y-4">
+          {projects.map((p) => (
+            <div
+              key={p.name}
+              className="rounded-2xl border border-line-strong bg-surface-container/60 p-4 grid md:grid-cols-[120px_1fr] gap-4"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- local thumbnail */}
+              <img src={p.url} alt="" className="w-full aspect-[16/11] object-cover rounded-lg border border-line-strong" />
+              <div className="space-y-3">
+                <input
+                  value={p.title}
+                  onChange={(e) => setProjects((prev) => prev.map((x) => (x.name === p.name ? { ...x, title: e.target.value } : x)))}
+                  placeholder={p.name.replace(/\.[^.]+$/, '')}
+                  className="w-full rounded-lg border border-line-strong bg-surface-container px-3 py-2 text-sm font-medium text-cotton placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary-container/60"
+                />
+                <textarea
+                  value={p.desc}
+                  onChange={(e) => setProjects((prev) => prev.map((x) => (x.name === p.name ? { ...x, desc: e.target.value } : x)))}
+                  placeholder="Description"
+                  rows={2}
+                  className="w-full rounded-lg border border-line-strong bg-surface-container px-3 py-2 text-sm text-on-surface-variant focus:outline-none focus:border-primary-container/60 resize-none"
+                />
+                <p className="font-mono text-[10px] text-on-surface-variant/50">{p.name}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <div className="sticky bottom-4 mt-6">
         <button
