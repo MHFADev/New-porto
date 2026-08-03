@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --surface:#171113; --cream:#F1EBE1; --orange:#E8452B; --coral:#C9714F; --muted:#B4A89D; --line:#F1EBE128;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1584px;height:396px;overflow:hidden}
+  body{background:var(--surface);color:var(--cream);font-family:'Space Grotesk',system-ui,sans-serif}
+  .full{position:absolute;inset:0;overflow:hidden}
+  .grid{position:absolute;inset:0;opacity:.5;background-image:
+    linear-gradient(to right,var(--line) 1px,transparent 1px),
+    linear-gradient(to bottom,var(--line) 1px,transparent 1px);background-size:54px 54px}
+  .grid::after{content:"";position:absolute;inset:0;
+    background:radial-gradient(120% 180% at 15% 0%,transparent 40%,var(--surface) 82%)}
+  .glow{position:absolute;top:-240px;right:-140px;width:760px;height:760px;border-radius:50%;
+    background:radial-gradient(circle,color-mix(in srgb,var(--orange) 22%,transparent) 0%,transparent 66%)}
+  .ring{position:absolute;left:66px;top:50%;translate:0 -50%;width:300px;height:300px;border-radius:50%;
+    border:1px solid var(--line)}
+  .ring::after{content:"//";position:absolute;left:-16px;top:50%;translate:0 -50%;color:var(--orange);font-family:'JetBrains Mono';font-weight:600}
+  .content{position:absolute;left:170px;top:50%;translate:0 -50%;right:56px}
+  .kicker{font-family:'JetBrains Mono';font-size:17px;letter-spacing:.32em;color:var(--muted);text-transform:uppercase;margin-bottom:20px}
+  .kicker b{color:var(--orange)}
+  h1{font-size:76px;line-height:.98;font-weight:700;letter-spacing:-.02em}
+  h1 .dot{color:var(--orange)}
+  .role{font-family:'JetBrains Mono';font-size:20px;color:var(--muted);margin-top:18px;letter-spacing:.04em}
+  .role span{color:var(--coral)}
+  .foot{position:absolute;bottom:30px;right:56px;left:170px;display:flex;justify-content:space-between;
+    font-family:'JetBrains Mono';font-size:15px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+  .foot .accent{color:var(--orange)}
+</style>
+</head>
+<body>
+<div class="full">
+  <div class="grid"></div>
+  <div class="glow"></div>
+  <div class="ring"></div>
+  <div class="content">
+    <div class="kicker">~/hilmi &nbsp;<b>●</b>&nbsp; available for work</div>
+    <h1>Infrastructure,<br>diagnosed &amp; built.</h1>
+    <div class="role">IT Support Specialist <span>·</span> Full-Stack Developer <span>·</span> Systems Administrator</div>
+  </div>
+  <div class="foot"><span>hilmi<span class="accent">.</span>my.id</span><span><span class="accent">IT</span> · DEV · SYSTEMS</span></div>
+</div>
+</body>
+</html>

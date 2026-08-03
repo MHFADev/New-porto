@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--surface:#171113;--cream:#F1EBE1;--orange:#E8452B;--coral:#C9714F;--muted:#B4A89D;--line:#F1EBE128}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1500px;height:500px;overflow:hidden}
+  body{background:var(--surface);color:var(--cream);font-family:'Space Grotesk',system-ui,sans-serif}
+  .full{position:absolute;inset:0;overflow:hidden}
+  .grid{position:absolute;inset:0;opacity:.5;background-image:
+    linear-gradient(to right,var(--line) 1px,transparent 1px),
+    linear-gradient(to bottom,var(--line) 1px,transparent 1px);background-size:58px 58px}
+  .grid::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 200% at 88% 110%,transparent 30%,var(--surface) 78%)}
+  .orb{position:absolute;top:-160px;left:-120px;width:720px;height:720px;border-radius:50%;
+    background:radial-gradient(circle,color-mix(in srgb,var(--orange) 20%,transparent) 0%,transparent 66%)}
+  .cursor{position:absolute;top:84px;left:64px;font-family:'JetBrains Mono';font-size:19px;letter-spacing:.2em;color:var(--muted)}
+  .cursor b{color:var(--orange)}
+  .content{position:absolute;left:64px;top:132px;right:64px}
+  h1{font-size:150px;line-height:.94;font-weight:700;letter-spacing:-.03em}
+  h1 span{display:block}
+  h1 .grad{
+    background:linear-gradient(96deg,var(--orange) 8%,var(--coral) 92%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .role{font-family:'JetBrains Mono';font-size:22px;color:var(--muted);margin-top:22px}
+  .role span{color:var(--coral);margin:0 10px}
+  .foot{position:absolute;right:64px;bottom:34px;left:64px;display:flex;justify-content:space-between;
+    font-family:'JetBrains Mono';font-size:15px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+  .foot .accent{color:var(--orange)}
+</style>
+</head>
+<body>
+<div class="full">
+  <div class="grid"></div>
+  <div class="orb"></div>
+  <div class="cursor">~$ whoami &nbsp;>&nbsp; <b>hilmi</b>.my.id</div>
+  <div class="content">
+    <h1>
+      <span>Diagnose.</span>
+      <span class="grad">Build. Ship.</span>
+    </h1>
+    <div class="role">IT Support <span>/</span> Full-Stack Dev <span>/</span> SysAdmin</div>
+  </div>
+  <div class="foot"><span>hilmi<span class="accent">.</span>my.id</span><span><span class="accent">OPEN</span> TO WORK</span></div>
+</div>
+</body>
+</html>

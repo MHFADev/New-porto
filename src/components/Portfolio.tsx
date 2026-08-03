@@ -1034,6 +1034,149 @@ function Projects() {
   );
 }
 
+// ponytail: static photo scroll-story (no AI video). Pan/zoom via anime onScroll scrub.
+const STORY = [
+  {
+    img: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.08.jpeg',
+    eyebrow: 'The bench',
+    title: 'From the workbench up.',
+    body: 'Every system I touch gets the same treatment — diagnosed, stabilized, documented.',
+    tags: ['Support', 'Troubleshooting', 'Maintenance'],
+  },
+  {
+    img: '/foto/IMG_20260709_130641.jpg',
+    eyebrow: 'The code',
+    title: 'Where maintenance meets software.',
+    body: 'Support tools, dashboards, and full apps — shipped with Next.js & TypeScript.',
+    tags: ['Next.js', 'TypeScript', 'Full-Stack'],
+  },
+  {
+    img: '/foto/WhatsApp%20Image%202026-07-09%20at%2012.06.57.jpeg',
+    eyebrow: 'On the floor',
+    title: 'Hands-on support.',
+    body: 'Close to the end user, on-site when it counts, calm under pressure.',
+    tags: ['IT Support', 'Network', 'On-site'],
+  },
+  {
+    img: '/foto/WhatsApp%20Image%202026-07-11%20at%2012.08.26.jpeg',
+    eyebrow: 'The infrastructure',
+    title: 'Keeping systems alive.',
+    body: 'Servers, switches, and the connections between them — stable and monitored.',
+    tags: ['Infrastructure', 'Server', 'Network'],
+  },
+  {
+    img: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.16.jpeg',
+    eyebrow: 'The details',
+    title: 'Close-up work.',
+    body: 'The unglamorous bits — cable, config, and clean diagnostics that keep it all honest.',
+    tags: ['Diagnostics', 'Hardware', 'Config'],
+  },
+  {
+    img: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.26.jpeg',
+    eyebrow: 'The result',
+    title: 'Systems that just work.',
+    body: 'Stable, dependable, well-documented — ready to help yours.',
+    tags: ['Open to work', 'Remote · Kendari'],
+    cta: true,
+  },
+];
+
+function StickyScene({ scene, index }: { scene: (typeof STORY)[number]; index: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    const el = ref.current;
+    const img = imgRef.current;
+    if (!el || !img) return;
+    if (reduced) return;
+    const obs: ScrollObserver = onScroll({
+      target: el,
+      sync: 30,
+      enter: 'top bottom',
+      leave: 'bottom top',
+      onUpdate: (self) => {
+        img.style.transform = `scale(${(1 + 0.14 * self.progress).toFixed(3)}) translate3d(0, ${(-46 * self.progress).toFixed(2)}px, 0)`;
+      },
+    });
+    return () => {
+      obs.revert();
+    };
+  }, [reduced]);
+
+  return (
+    <div className="relative h-[150vh]">
+      <div
+        ref={ref}
+        className="sticky top-0 h-screen overflow-hidden flex items-center border-b border-line-strong"
+      >
+        <div
+          ref={imgRef}
+          className="absolute inset-0 will-change-transform"
+          style={{ background: `center/cover no-repeat url(${scene.img})` }}
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-surface/95 via-surface/45 to-surface/10" aria-hidden="true" />
+        <div className="relative mx-auto max-w-6xl px-5 sm:px-8 w-full pb-16 pt-40">
+          <Reveal className="max-w-xl">
+            <div className="flex items-center gap-4 font-mono text-xs tracking-[0.25em] uppercase text-on-surface-variant/80 mb-5">
+              <span className="text-primary-container font-semibold">{String(index + 1).padStart(2, '0')}</span>
+              <span>{scene.eyebrow}</span>
+              <span className="h-px flex-1 bg-line-strong" />
+            </div>
+            <h2 className="font-display font-semibold tracking-[-0.02em] text-cotton text-3xl sm:text-5xl leading-[1.06] mb-5">
+              {scene.title}
+            </h2>
+            <p className="text-on-surface-variant/90 leading-relaxed mb-6 max-w-md">{scene.body}</p>
+            <div className="flex flex-wrap gap-2.5">
+              {scene.tags.map((t) => (
+                <span key={t} className="rounded-full border border-line-strong bg-surface-container/70 px-4 py-1.5 text-xs font-medium text-on-surface-variant">
+                  {t}
+                </span>
+              ))}
+            </div>
+            {scene.cta && (
+              <Reveal delay={80}>
+                <a
+                  href="#contact"
+                  className="mt-8 inline-flex items-center gap-2.5 rounded-full bg-primary-container text-on-primary-container px-7 py-3.5 text-sm font-semibold hover:opacity-90 transition-opacity"
+                >
+                  Hire me
+                  <ArrowUpRightIcon className="w-4 h-4" />
+                </a>
+              </Reveal>
+            )}
+          </Reveal>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScrollStory() {
+  return (
+    <section id="story" className="relative scroll-mt-16">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8 pt-28 sm:pt-36">
+        <SectionHeading
+          index="0S"
+          kicker="The journey"
+          title={
+            <>
+              Scroll through how I <span className="text-gradient">work</span>.
+            </>
+          }
+        />
+      </div>
+      <div className="mt-10">
+        {STORY.map((s, i) => (
+          <StickyScene key={s.eyebrow} scene={s} index={i} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Contact() {
   return (
     <section id="contact" className="relative border-t border-line-strong bg-surface-container/25 scroll-mt-16">
@@ -1177,6 +1320,7 @@ export default function Portfolio() {
         <About />
         <Skills />
         <Projects />
+        <ScrollStory />
         <Contact />
       </main>
 
