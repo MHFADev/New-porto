@@ -80,6 +80,196 @@ function useReducedMotion() {
   );
 }
 
+// ponytail: tiny Lenis-style lerp on fine pointers; native scroll elsewhere. Rung 5 — no new dep.
+function SmoothScroll() {
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    if (reduced || !window.matchMedia('(pointer: fine)').matches) return;
+    const html = document.documentElement;
+    html.style.scrollBehavior = 'auto';
+    let target = window.scrollY;
+    let cur = window.scrollY;
+    let raf = 0;
+    let running = false;
+
+    const tick = () => {
+      running = false;
+      cur += (target - cur) * 0.12;
+      if (Math.abs(target - cur) < 0.4) cur = target;
+      window.scrollTo(0, cur);
+      if (Math.abs(target - cur) > 0.4) {
+        running = true;
+        raf = requestAnimationFrame(tick);
+      }
+    };
+    const start = () => {
+      if (!running) {
+        running = true;
+        raf = requestAnimationFrame(tick);
+      }
+    };
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const max = html.scrollHeight - window.innerHeight;
+      target = Math.min(max, Math.max(0, target + e.deltaY));
+      start();
+    };
+    const onNativeScroll = () => {
+      if (!running) target = window.scrollY;
+    };
+    const onAnchorClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement).closest('a[href^="#"]');
+      if (!a) return;
+      const href = a.getAttribute('href')!;
+      const el = document.querySelector(href);
+      if (!el) return;
+      e.preventDefault();
+      const offset = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+      target = Math.max(0, el.getBoundingClientRect().top + window.scrollY - offset);
+      start();
+    };
+
+    window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('scroll', onNativeScroll, { passive: true });
+    window.addEventListener('click', onAnchorClick, { capture: true });
+    return () => {
+      html.style.scrollBehavior = '';
+      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('scroll', onNativeScroll);
+      window.removeEventListener('click', onAnchorClick, { capture: true } as EventListenerOptions);
+      cancelAnimationFrame(raf);
+    };
+  }, [reduced]);
+
+  return null;
+}
+
+function Tilt({
+  children,
+  className,
+  max = 9,
+}: {
+  children: ReactNode;
+  className?: string;
+  max?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (reduced || window.matchMedia('(hover: none)').matches) return;
+    let raf = 0;
+    const cur = { x: 0, y: 0 };
+    const goal = { x: 0, y: 0 };
+    const loop = () => {
+      raf = 0;
+      cur.x += (goal.x - cur.x) * 0.14;
+      cur.y += (goal.y - cur.y) * 0.14;
+      el.style.transform = `perspective(900px) rotateX(${cur.x.toFixed(2)}deg) rotateY(${cur.y.toFixed(2)}deg)`;
+      if (Math.abs(goal.x - cur.x) > 0.05 || Math.abs(goal.y - cur.y) > 0.05) {
+        raf = requestAnimationFrame(loop);
+      }
+    };
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect();
+      goal.x = -((e.clientY - r.top) / r.height - 0.5) * max;
+      goal.y = ((e.clientX - r.left) / r.width - 0.5) * max;
+      if (!raf) raf = requestAnimationFrame(loop);
+    };
+    const onLeave = () => {
+      goal.x = 0;
+      goal.y = 0;
+      if (!raf) raf = requestAnimationFrame(loop);
+    };
+    el.addEventListener('mousemove', onMove);
+    el.addEventListener('mouseleave', onLeave);
+    return () => {
+      el.removeEventListener('mousemove', onMove);
+      el.removeEventListener('mouseleave', onLeave);
+      cancelAnimationFrame(raf);
+    };
+  }, [max, reduced]);
+
+  return (
+    <div ref={ref} className={className} style={{ willChange: 'transform' }}>
+      {children}
+    </div>
+  );
+}
+
+function SplitWords({
+  text,
+  className,
+  gradientWords = [],
+  delay = 0,
+}: {
+  text: string;
+  className?: string;
+  gradientWords?: string[];
+  delay?: number;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const spans = Array.from(el.querySelectorAll<HTMLElement>('[data-w]'));
+    if (reduced) {
+      spans.forEach((s) => {
+        s.style.opacity = '1';
+        s.style.transform = 'none';
+      });
+      return;
+    }
+    let anim: JSAnimation | null = null;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !anim) {
+          anim = animate(spans, {
+            opacity: [0, 1],
+            translateY: ['110%', '0%'],
+            duration: 900,
+            delay: stagger(40, { start: delay }),
+            ease: 'outExpo',
+          });
+          io.disconnect();
+        }
+      },
+      { threshold: 0.4 }
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      anim?.pause();
+    };
+  }, [delay, reduced]);
+
+  const clean = (w: string) => w.replace(/[^a-zA-Z0-9'-]/g, '');
+
+  return (
+    <span ref={ref} className={className} aria-label={text} role="text">
+      {text.split(' ').map((w, i) => (
+        <span key={i} className="inline-block overflow-hidden align-bottom pb-[0.08em] -mb-[0.08em]">
+          <span
+            data-w
+            aria-hidden="true"
+            className={`inline-block will-change-transform ${
+              gradientWords.includes(clean(w)) ? 'text-gradient' : ''
+            }`}
+          >
+            {w}
+            {'\u00A0'}
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function Reveal({
   children,
   className,
@@ -409,10 +599,12 @@ function SectionHeading({
   index,
   kicker,
   title,
+  gradient = [],
 }: {
   index: string;
   kicker: string;
-  title: ReactNode;
+  title: string;
+  gradient?: string[];
 }) {
   return (
     <Reveal className="mb-14 sm:mb-20">
@@ -423,7 +615,7 @@ function SectionHeading({
           <span className="h-px flex-1 bg-line-strong" />
         </div>
         <h2 className="font-display font-semibold tracking-[-0.02em] text-cotton text-3xl sm:text-5xl leading-[1.08] max-w-2xl">
-          {title}
+          <SplitWords text={title} gradientWords={gradient} />
         </h2>
       </div>
     </Reveal>
@@ -795,11 +987,8 @@ function About() {
       <SectionHeading
         index="01"
         kicker="About"
-        title={
-          <>
-            Infrastructure meets <span className="text-gradient">code</span>.
-          </>
-        }
+        title="Infrastructure meets code."
+        gradient={['code']}
       />
 
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-20">
@@ -854,19 +1043,14 @@ function Skills() {
         <SectionHeading
           index="02"
           kicker="Capabilities"
-          title={
-            <>
-              A toolkit built for <span className="text-gradient">reliability</span>.
-            </>
-          }
+          title="A toolkit built for reliability."
+          gradient={['reliability']}
         />
 
         <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5" staggerMs={110}>
           {SKILLS.map((skill, i) => (
-            <div
-              key={skill.group}
-              className="reveal-item group relative rounded-2xl border border-line-strong bg-surface-container/60 p-8 h-full overflow-hidden hover:border-primary-container/50"
-            >
+            <div key={skill.group} className="reveal-item h-full">
+              <Tilt className="group relative rounded-2xl border border-line-strong bg-surface-container/60 p-8 h-full overflow-hidden hover:border-primary-container/50">
               <div
                 className="absolute top-0 left-0 h-[3px] w-0 bg-gradient-to-r from-primary-container to-secondary transition-all duration-500 group-hover:w-full"
                 aria-hidden="true"
@@ -888,6 +1072,7 @@ function Skills() {
                   </li>
                 ))}
               </ul>
+              </Tilt>
             </div>
           ))}
         </RevealGroup>
@@ -961,11 +1146,8 @@ function Projects() {
       <SectionHeading
         index="03"
         kicker="Selected work"
-        title={
-          <>
-            Things I&rsquo;ve shipped, <span className="text-gradient">lately</span>.
-          </>
-        }
+        title="Things I&rsquo;ve shipped, lately."
+        gradient={['lately']}
       />
 
       <div className="space-y-24 sm:space-y-32">
@@ -977,18 +1159,20 @@ function Projects() {
                   className="absolute -inset-3 rounded-[1.75rem] border border-line bg-gradient-to-br from-primary-container/15 to-transparent rotate-2 pointer-events-none transition-transform duration-700 group-hover:rotate-0"
                   aria-hidden="true"
                 />
-                <div className="relative rounded-2xl overflow-hidden border border-line-strong bg-surface-container aspect-[16/11]">
-                  <SmartImage
-                    src={p.url}
-                    alt={`${p.title || toTitle(p.name)} preview`}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                    fallback={<ProjectFallback name={p.title || toTitle(p.name)} />}
-                  />
-                  <div
-                    className="absolute inset-0 bg-gradient-to-t from-surface/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    aria-hidden="true"
-                  />
-                </div>
+                <Tilt className="relative">
+                  <div className="relative rounded-2xl overflow-hidden border border-line-strong bg-surface-container aspect-[16/11]">
+                    <SmartImage
+                      src={p.url}
+                      alt={`${p.title || toTitle(p.name)} preview`}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                      fallback={<ProjectFallback name={p.title || toTitle(p.name)} />}
+                    />
+                    <div
+                      className="absolute inset-0 bg-gradient-to-t from-surface/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      aria-hidden="true"
+                    />
+                  </div>
+                </Tilt>
               </div>
 
               <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
@@ -1161,11 +1345,8 @@ function ScrollStory() {
         <SectionHeading
           index="0S"
           kicker="The journey"
-          title={
-            <>
-              Scroll through how I <span className="text-gradient">work</span>.
-            </>
-          }
+          title="Scroll through how I work."
+          gradient={['work']}
         />
       </div>
       <div className="mt-10">
@@ -1184,11 +1365,8 @@ function Contact() {
         <SectionHeading
           index="04"
           kicker="Contact"
-          title={
-            <>
-              Let&rsquo;s build something <span className="text-gradient">solid</span>.
-            </>
-          }
+          title="Let&rsquo;s build something solid."
+          gradient={['solid']}
         />
 
         <Reveal delay={120}>
@@ -1311,6 +1489,7 @@ export default function Portfolio() {
         />
       </div>
 
+      <SmoothScroll />
       <ScrollChrome />
       <Navbar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
 
