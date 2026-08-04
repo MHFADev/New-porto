@@ -595,16 +595,169 @@ function SmartImage({
   return <div className={className} aria-hidden="true" style={{ background: 'var(--color-surface-container-high)' }} />;
 }
 
+function CursorSpotlight({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || reduced || window.matchMedia('(hover: none)').matches) return;
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--spot-x', `${e.clientX - r.left}px`);
+      el.style.setProperty('--spot-y', `${e.clientY - r.top}px`);
+    };
+    el.addEventListener('mousemove', onMove);
+    return () => el.removeEventListener('mousemove', onMove);
+  }, [reduced]);
+
+  return (
+    <div ref={ref} className={`spotlight-card ${className ?? ''}`}>
+      {children}
+    </div>
+  );
+}
+
+function FlipText({
+  text,
+  className,
+  delay = 0,
+}: {
+  text: string;
+  className?: string;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || reduced) return;
+    const chars = Array.from(el.querySelectorAll<HTMLElement>('[data-flip]'));
+    let anim: JSAnimation | null = null;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !anim) {
+          anim = animate(chars, {
+            rotateX: [90, 0],
+            opacity: [0, 1],
+            duration: 700,
+            delay: stagger(22, { start: delay }),
+            ease: 'outExpo',
+          });
+          io.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      anim?.pause();
+    };
+  }, [delay, reduced]);
+
+  return (
+    <span ref={ref} className={className} aria-label={text} role="text">
+      {text.split('').map((ch, i) => (
+        <span
+          key={i}
+          className="inline-block overflow-hidden"
+          style={{ perspective: '600px' }}
+        >
+          <span
+            data-flip
+            aria-hidden="true"
+            className="inline-block will-change-transform"
+            style={{ opacity: reduced ? 1 : 0, transformOrigin: 'bottom' }}
+          >
+            {ch === ' ' ? '\u00A0' : ch}
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function ImageReveal({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || reduced) return;
+    el.style.clipPath = 'circle(0% at 50% 50%)';
+    let anim: JSAnimation | null = null;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !anim) {
+          anim = animate(el, {
+            clipPath: ['circle(0% at 50% 50%)', 'circle(75% at 50% 50%)'],
+            duration: 1200,
+            delay,
+            ease: 'outExpo',
+          });
+          io.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      anim?.pause();
+    };
+  }, [delay, reduced]);
+
+  return (
+    <div ref={ref} className={className} style={{ willChange: 'clip-path' }}>
+      {children}
+    </div>
+  );
+}
+
+function AnimatedRays({ className }: { className?: string }) {
+  return (
+    <div
+      className={`pointer-events-none absolute inset-0 overflow-hidden opacity-40 ${className ?? ''}`}
+      aria-hidden="true"
+      style={{
+        background:
+          'conic-gradient(from 180deg at 50% 50%, transparent 0deg, color-mix(in srgb, var(--color-primary-container) 18%, transparent) 15deg, transparent 30deg, color-mix(in srgb, var(--color-secondary) 14%, transparent) 45deg, transparent 60deg, color-mix(in srgb, var(--color-primary-container) 18%, transparent) 75deg, transparent 90deg, color-mix(in srgb, var(--color-secondary) 14%, transparent) 105deg, transparent 120deg)',
+        animation: 'rays-spin 28s linear infinite',
+        maskImage: 'radial-gradient(ellipse 65% 65% at 50% 50%, #000 25%, transparent 70%)',
+        WebkitMaskImage: 'radial-gradient(ellipse 65% 65% at 50% 50%, #000 25%, transparent 70%)',
+      }}
+    />
+  );
+}
+
 function SectionHeading({
   index,
   kicker,
   title,
   gradient = [],
+  useFlip = false,
 }: {
   index: string;
   kicker: string;
   title: string;
   gradient?: string[];
+  useFlip?: boolean;
 }) {
   return (
     <Reveal className="mb-14 sm:mb-20">
@@ -615,7 +768,11 @@ function SectionHeading({
           <span className="h-px flex-1 bg-line-strong" />
         </div>
         <h2 className="font-display font-semibold tracking-[-0.02em] text-cotton text-3xl sm:text-5xl leading-[1.08] max-w-2xl">
-          <SplitWords text={title} gradientWords={gradient} />
+          {useFlip ? (
+            <FlipText text={title} />
+          ) : (
+            <SplitWords text={title} gradientWords={gradient} />
+          )}
         </h2>
       </div>
     </Reveal>
@@ -855,6 +1012,7 @@ function Hero({ reduced }: { reduced: boolean }) {
 
   return (
     <section id="top" ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden pt-16">
+      <AnimatedRays />
       <div className="absolute inset-0 grid-bg grid-fade pointer-events-none" aria-hidden="true" />
       <div
         data-parallax="0.35"
@@ -951,12 +1109,14 @@ function Hero({ reduced }: { reduced: boolean }) {
             style={{ opacity: 0 }}
             className="relative rounded-2xl overflow-hidden border border-line-strong bg-surface-container aspect-[4/5]"
           >
-            <SmartImage
-              src={`${GH_RAW}/profile.jpg`}
-              alt="Portrait of M. Hilmi Firjatullah Adi"
-              className="absolute inset-0 w-full h-full object-cover"
-              fallback={<ProfileFallback />}
-            />
+            <ImageReveal className="absolute inset-0">
+              <SmartImage
+                src={`${GH_RAW}/profile.jpg`}
+                alt="Portrait of M. Hilmi Firjatullah Adi"
+                className="absolute inset-0 w-full h-full object-cover"
+                fallback={<ProfileFallback />}
+              />
+            </ImageReveal>
           </div>
           <div
             data-hero
@@ -1050,29 +1210,27 @@ function Skills() {
         <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5" staggerMs={110}>
           {SKILLS.map((skill, i) => (
             <div key={skill.group} className="reveal-item h-full">
-              <Tilt className="group relative rounded-2xl border border-line-strong bg-surface-container/60 p-8 h-full overflow-hidden hover:border-primary-container/50">
-              <div
-                className="absolute top-0 left-0 h-[3px] w-0 bg-gradient-to-r from-primary-container to-secondary transition-all duration-500 group-hover:w-full"
-                aria-hidden="true"
-              />
-              <div className="flex items-center justify-between mb-8">
-                <span className="w-11 h-11 rounded-xl border border-line-strong bg-surface-container-high/60 flex items-center justify-center text-primary-container">
-                  {skill.icon}
-                </span>
-                <span className="font-mono text-[10px] tracking-[0.25em] text-on-surface-variant/50 uppercase">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-              </div>
-              <h3 className="font-display font-semibold text-lg text-cotton mb-5">{skill.group}</h3>
-              <ul className="space-y-3.5">
-                {skill.items.map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-on-surface-variant">
-                    <CheckIcon className="w-4 h-4 text-primary-container shrink-0" />
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              </Tilt>
+              <CursorSpotlight className="rounded-2xl border border-line-strong bg-surface-container/60 hover:border-primary-container/50 transition-colors animated-border h-full">
+                <Tilt className="relative p-8 h-full overflow-hidden">
+                <div className="flex items-center justify-between mb-8">
+                  <span className="w-11 h-11 rounded-xl border border-line-strong bg-surface-container-high/60 flex items-center justify-center text-primary-container relative z-[3]">
+                    {skill.icon}
+                  </span>
+                  <span className="font-mono text-[10px] tracking-[0.25em] text-on-surface-variant/50 uppercase relative z-[3]">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                </div>
+                <h3 className="font-display font-semibold text-lg text-cotton mb-5 relative z-[3]">{skill.group}</h3>
+                <ul className="space-y-3.5 relative z-[3]">
+                  {skill.items.map((item) => (
+                    <li key={item} className="flex items-center gap-3 text-sm text-on-surface-variant group/item">
+                      <CheckIcon className="w-4 h-4 text-primary-container shrink-0" />
+                      <span className="transition-transform duration-300 group-hover/item:translate-x-1">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+                </Tilt>
+              </CursorSpotlight>
             </div>
           ))}
         </RevealGroup>
@@ -1160,13 +1318,15 @@ function Projects() {
                   aria-hidden="true"
                 />
                 <Tilt className="relative">
-                  <div className="relative rounded-2xl overflow-hidden border border-line-strong bg-surface-container aspect-[16/11]">
-                    <SmartImage
-                      src={p.url}
-                      alt={`${p.title || toTitle(p.name)} preview`}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                      fallback={<ProjectFallback name={p.title || toTitle(p.name)} />}
-                    />
+                  <div className="relative rounded-2xl overflow-hidden border border-line-strong bg-surface-container aspect-[16/11] animated-border">
+                    <ImageReveal className="absolute inset-0">
+                      <SmartImage
+                        src={p.url}
+                        alt={`${p.title || toTitle(p.name)} preview`}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                        fallback={<ProjectFallback name={p.title || toTitle(p.name)} />}
+                      />
+                    </ImageReveal>
                     <div
                       className="absolute inset-0 bg-gradient-to-t from-surface/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                       aria-hidden="true"
@@ -1346,7 +1506,7 @@ function ScrollStory() {
           index="0S"
           kicker="The journey"
           title="Scroll through how I work."
-          gradient={['work']}
+          useFlip
         />
       </div>
       <div className="mt-10">
@@ -1366,17 +1526,17 @@ function Contact() {
           index="04"
           kicker="Contact"
           title="Let&rsquo;s build something solid."
-          gradient={['solid']}
+          useFlip
         />
 
         <Reveal delay={120}>
-          <div className="relative rounded-3xl border border-line-strong bg-surface-container/50 p-8 sm:p-14 flex flex-col lg:flex-row lg:items-end justify-between gap-10 overflow-hidden">
+          <CursorSpotlight className="relative rounded-3xl border border-line-strong bg-surface-container/50 p-8 sm:p-14 flex flex-col lg:flex-row lg:items-end justify-between gap-10 overflow-hidden animated-border">
             <div
               className="absolute -top-24 -right-24 w-72 h-72 rounded-full pointer-events-none"
               style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--color-primary-container) 16%, transparent) 0%, transparent 68%)' }}
               aria-hidden="true"
             />
-            <div className="relative max-w-xl">
+            <div className="relative z-[3] max-w-xl">
               <p className="text-on-surface-variant/90 leading-relaxed mb-8">
                 Open for freelance, contract, and full-time roles — remote or based in Kendari. If you have a system
                 to stabilize or a product to ship, I&rsquo;d love to hear about it.
@@ -1407,7 +1567,7 @@ function Contact() {
                 <ArrowUpRightIcon className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </a>
             </Magnetic>
-          </div>
+          </CursorSpotlight>
         </Reveal>
       </div>
     </section>
@@ -1491,6 +1651,7 @@ export default function Portfolio() {
 
       <SmoothScroll />
       <ScrollChrome />
+      <div className="fixed inset-0 pointer-events-none z-[1] grain" aria-hidden="true" />
       <Navbar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
 
       <main className="relative z-10">
