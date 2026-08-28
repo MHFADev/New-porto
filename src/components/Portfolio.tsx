@@ -5,12 +5,11 @@ import type { CSSProperties, ReactNode, SVGProps } from 'react';
 import { animate, onScroll, stagger } from 'animejs';
 import type { JSAnimation, ScrollObserver } from 'animejs';
 
-const GH_RAW = '/api/images/port';
-
 const NAV = [
   { label: 'About', href: '#about' },
   { label: 'Skills', href: '#skills' },
   { label: 'Work', href: '#projects' },
+  { label: 'Journey', href: '#story' },
   { label: 'Contact', href: '#contact' },
 ];
 
@@ -65,7 +64,7 @@ const STATS = [
 const SOCIALS = [
   { label: 'GitHub', href: 'https://github.com/MHFADev', icon: <GitHubIcon className="w-4 h-4" /> },
   { label: 'LinkedIn', href: 'https://linkedin.com/in/mhilmifa', icon: <LinkedInIcon className="w-4 h-4" /> },
-  { label: 'Email', href: 'mailto:m.hilmi@example.com', icon: <MailIcon className="w-4 h-4" /> },
+  { label: 'Email', href: 'mailto:hello@hilmi.my.id', icon: <MailIcon className="w-4 h-4" /> },
 ];
 
 function useReducedMotion() {
@@ -762,12 +761,12 @@ function SectionHeading({
   return (
     <Reveal className="mb-14 sm:mb-20">
       <div>
-        <div className="flex items-center gap-4 font-mono text-xs tracking-[0.25em] uppercase text-on-surface-variant/70 mb-5">
-          <span className="text-primary-container font-semibold">{index}</span>
+        <div className="flex items-center gap-4 font-mono text-xs font-bold tracking-[0.25em] uppercase text-on-surface-variant/70 mb-5">
+          <span className="section-index">{index}</span>
           <span>{kicker}</span>
-          <span className="h-px flex-1 bg-line-strong" />
+          <span className="h-[2px] flex-1 bg-line-strong" />
         </div>
-        <h2 className="font-display font-semibold tracking-[-0.02em] text-cotton text-3xl sm:text-5xl leading-[1.08] max-w-2xl">
+        <h2 className="font-display font-black tracking-[-0.045em] text-cotton text-4xl sm:text-6xl leading-[.98] max-w-3xl">
           {useFlip ? (
             <FlipText text={title} />
           ) : (
@@ -864,8 +863,8 @@ function Navbar({ theme, onToggle }: { theme: string; onToggle: () => void }) {
         } ${scrolled || open ? 'bg-surface/85 backdrop-blur-xl border-b border-line-strong shadow-[0_8px_30px_-12px_rgba(0,0,0,0.4)]' : 'bg-transparent border-b border-transparent'}`}
       >
         <div className="mx-auto max-w-6xl px-5 sm:px-8 h-16 flex items-center justify-between">
-          <a href="#top" className="font-display font-bold text-lg text-cotton tracking-tight">
-            hilmi<span className="text-primary-container">.</span>
+          <a href="#top" className="brand-badge font-display font-black text-lg text-ink tracking-tight">
+            hilmi<span>.</span>
             <span className="hidden sm:inline font-mono text-[10px] font-normal text-on-surface-variant/60 ml-2">
               my.id
             </span>
@@ -903,7 +902,7 @@ function Navbar({ theme, onToggle }: { theme: string; onToggle: () => void }) {
             </button>
             <a
               href="#contact"
-              className="hidden md:inline-flex items-center gap-2 rounded-full bg-primary-container text-on-primary-container px-5 py-2.5 text-sm font-semibold hover:opacity-90"
+              className="hidden md:inline-flex items-center gap-2 rounded-full border-2 border-ink bg-yellow text-ink px-5 py-2.5 text-sm font-black shadow-[4px_5px_0_var(--color-ink)] hover:-translate-y-0.5 transition-transform"
             >
               Hire me
             </a>
@@ -942,6 +941,51 @@ function Navbar({ theme, onToggle }: { theme: string; onToggle: () => void }) {
         </div>
       )}
     </>
+  );
+}
+
+function GlobeScene({ reduced }: { reduced: boolean }) {
+  const sceneRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene || reduced || window.matchMedia('(hover: none)').matches) return;
+    const onMove = (event: PointerEvent) => {
+      const bounds = scene.getBoundingClientRect();
+      const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+      const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+      scene.style.setProperty('--globe-rx', `${(-y * 12).toFixed(2)}deg`);
+      scene.style.setProperty('--globe-ry', `${(x * 18).toFixed(2)}deg`);
+    };
+    const onLeave = () => {
+      scene.style.setProperty('--globe-rx', '0deg');
+      scene.style.setProperty('--globe-ry', '0deg');
+    };
+    scene.addEventListener('pointermove', onMove);
+    scene.addEventListener('pointerleave', onLeave);
+    return () => {
+      scene.removeEventListener('pointermove', onMove);
+      scene.removeEventListener('pointerleave', onLeave);
+    };
+  }, [reduced]);
+
+  return (
+    <div ref={sceneRef} className="globe-scene" aria-label="A playful interactive globe representing remote-ready digital work">
+      <div className="globe-shadow" aria-hidden="true" />
+      <div className="globe-asset-wrap" aria-hidden="true">
+        {/* eslint-disable-next-line @next/next/no-img-element -- generated transparent portfolio artwork */}
+        <img src="/assets/hilmi-orbit-world.png" alt="" className="globe-asset" />
+      </div>
+      <div className="globe-pin pin-kendari" aria-hidden="true"><span /> Kendari, ID</div>
+      <div className="globe-sticker sticker-code" aria-hidden="true">&lt;/&gt;</div>
+      <div className="globe-sticker sticker-spark" aria-hidden="true">✦</div>
+      <div className="globe-sticker sticker-cloud" aria-hidden="true">24/7</div>
+      <div className="globe-caption" aria-hidden="true">
+        <span>REMOTE READY</span>
+        <span className="caption-dot" />
+        <span>WORLDWIDE</span>
+      </div>
+    </div>
   );
 }
 
@@ -1011,55 +1055,60 @@ function Hero({ reduced }: { reduced: boolean }) {
   }, [reduced]);
 
   return (
-    <section id="top" ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden pt-16">
+    <section id="top" ref={heroRef} className="hero-playground relative min-h-screen flex items-center overflow-hidden pt-16">
       <AnimatedRays />
-      <div className="absolute inset-0 grid-bg grid-fade pointer-events-none" aria-hidden="true" />
+      <div className="absolute inset-0 playground-grid pointer-events-none" aria-hidden="true" />
       <div
         data-parallax="0.35"
-        className="absolute -top-44 -right-32 w-[42rem] h-[42rem] rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--color-primary-container) 20%, transparent) 0%, transparent 68%)' }}
+        className="hero-blob hero-blob-pink absolute -top-44 -right-32 w-[42rem] h-[42rem] rounded-full pointer-events-none"
         aria-hidden="true"
       />
       <div
         data-parallax="0.18"
-        className="absolute bottom-[-32%] left-[-18%] w-[40rem] h-[40rem] rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--color-secondary) 14%, transparent) 0%, transparent 68%)' }}
+        className="hero-blob hero-blob-blue absolute bottom-[-32%] left-[-18%] w-[40rem] h-[40rem] rounded-full pointer-events-none"
         aria-hidden="true"
       />
       <div
         data-bob
-        className="absolute top-[20%] right-[22%] w-32 h-32 rounded-full border border-line-strong pointer-events-none"
+        className="absolute top-[19%] left-[5%] text-[clamp(4rem,10vw,9rem)] font-display font-black text-cotton/[0.035] -rotate-12 pointer-events-none"
         aria-hidden="true"
-      />
+      >HELLO!</div>
       <div
         data-bob
-        className="absolute bottom-[24%] left-[10%] w-20 h-20 rounded-full border border-line-strong pointer-events-none"
+        className="absolute bottom-[20%] right-[7%] text-[clamp(3rem,7vw,7rem)] font-display font-black text-cotton/[0.04] rotate-12 pointer-events-none"
         style={{ animationDelay: '-2.1s' }}
         aria-hidden="true"
-      />
+      >CREATE</div>
 
-      <div className="relative mx-auto max-w-6xl px-5 sm:px-8 w-full grid lg:grid-cols-[1.5fr_1fr] gap-14 lg:gap-20 items-center py-24 sm:py-32">
+      <div className="relative mx-auto max-w-[82rem] px-5 sm:px-8 w-full grid lg:grid-cols-[1.08fr_0.92fr] gap-12 lg:gap-8 items-center py-24 sm:py-28">
         <div>
           <div
             data-hero
             style={{ opacity: 0 }}
-            className="inline-flex items-center gap-2.5 rounded-full border border-line-strong bg-surface-container/60 px-4 py-1.5 mb-8"
+            className="hero-pill inline-flex items-center gap-2.5 rounded-full border-2 border-ink bg-lime px-4 py-2 mb-8 text-ink"
           >
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-active opacity-60" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-active" />
             </span>
-            <span className="text-xs font-medium tracking-wide text-on-surface-variant">
-              Available for work — IT Support & Development
+            <span className="text-xs font-bold tracking-wide">
+              AVAILABLE FOR COOL PROJECTS
             </span>
           </div>
 
-          <h1 className="font-display font-semibold tracking-[-0.03em] leading-[1.02] text-[clamp(3rem,9vw,6.25rem)] text-cotton mb-7">
+          <p data-hero style={{ opacity: 0 }} className="font-mono text-xs sm:text-sm font-bold tracking-[0.24em] text-cyan mb-5 uppercase">
+            M. Hilmi Firjatullah Adi · Kendari, ID
+          </p>
+
+          <h1 className="font-display font-black tracking-[-0.055em] leading-[0.92] text-[clamp(3.7rem,9.2vw,7.5rem)] text-cotton mb-7 max-w-4xl">
             <span data-hero style={{ opacity: 0 }} className="block overflow-hidden">
-              <span className="block">M. Hilmi</span>
+              <span className="block">I KEEP</span>
             </span>
             <span data-hero style={{ opacity: 0 }} className="block overflow-hidden">
-              <span className="block text-gradient">Firjatullah Adi</span>
+              <span className="block"><span className="hero-word hero-word-pink">SYSTEMS</span> HAPPY</span>
+            </span>
+            <span data-hero style={{ opacity: 0 }} className="block overflow-hidden">
+              <span className="block">&amp; <span className="hero-word hero-word-yellow">IDEAS</span> ALIVE.</span>
             </span>
           </h1>
 
@@ -1068,15 +1117,14 @@ function Hero({ reduced }: { reduced: boolean }) {
           </p>
 
           <p data-hero style={{ opacity: 0 }} className="text-base sm:text-lg text-on-surface-variant/90 max-w-xl leading-relaxed mb-10">
-            Bridging infrastructure and code — turning complex systems into seamless solutions.
+            I bridge infrastructure and code to build digital experiences that feel effortless, dependable, and a little more fun.
           </p>
 
           <div data-hero style={{ opacity: 0 }} className="flex flex-wrap items-center gap-4 mb-12">
             <Magnetic>
               <a
                 href="#projects"
-                className="group inline-flex items-center gap-2.5 rounded-full bg-primary-container text-on-primary-container px-7 py-3.5 text-sm font-semibold tracking-wide hover:opacity-90 transition-opacity"
-                style={{ boxShadow: '0 10px 32px -10px color-mix(in srgb, var(--color-primary-container) 55%, transparent)' }}
+                className="cartoon-button cartoon-button-primary group inline-flex items-center gap-2.5 rounded-full px-7 py-3.5 text-sm font-black tracking-wide"
               >
                 View my work
                 <ArrowUpRightIcon className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -1085,47 +1133,22 @@ function Hero({ reduced }: { reduced: boolean }) {
             <Magnetic>
               <a
                 href="#contact"
-                className="group inline-flex items-center gap-2.5 rounded-full border border-line-strong bg-surface-container/40 px-7 py-3.5 text-sm font-semibold tracking-wide text-cotton hover:border-primary-container/60 hover:text-primary-container transition-colors"
+                className="cartoon-button group inline-flex items-center gap-2.5 rounded-full px-7 py-3.5 text-sm font-black tracking-wide text-cotton"
               >
                 Get in touch
               </a>
             </Magnetic>
           </div>
 
-          <div data-hero style={{ opacity: 0 }} className="flex items-center gap-5 font-mono text-xs text-on-surface-variant/70">
-            <span className="text-primary-container">~/hilmi</span>
-            <span className="h-px w-8 bg-line-strong" aria-hidden="true" />
-            <span className="tracking-[0.2em]">IT · DEV · SYSTEMS</span>
+          <div data-hero style={{ opacity: 0 }} className="flex flex-wrap items-center gap-3 font-mono text-[11px] font-bold tracking-[0.16em] text-on-surface-variant">
+            <span className="mini-sticker bg-pink text-ink">IT SUPPORT</span>
+            <span className="mini-sticker bg-cyan text-ink">FULL-STACK</span>
+            <span className="mini-sticker bg-yellow text-ink">SYSTEMS</span>
           </div>
         </div>
 
-        <div data-parallax="0.08" className="relative mx-auto w-60 sm:w-72 lg:w-80">
-          <div
-            className="absolute -inset-3 rounded-[1.75rem] border border-primary-container/30 rotate-3 pointer-events-none"
-            aria-hidden="true"
-          />
-          <div
-            data-hero
-            style={{ opacity: 0 }}
-            className="relative rounded-2xl overflow-hidden border border-line-strong bg-surface-container aspect-[4/5]"
-          >
-            <ImageReveal className="absolute inset-0">
-              <SmartImage
-                src={`${GH_RAW}/profile.jpg`}
-                alt="Portrait of M. Hilmi Firjatullah Adi"
-                className="absolute inset-0 w-full h-full object-cover"
-                fallback={<ProfileFallback />}
-              />
-            </ImageReveal>
-          </div>
-          <div
-            data-hero
-            style={{ opacity: 0 }}
-            className="mt-4 flex items-center justify-between font-mono text-[11px] text-on-surface-variant/70"
-          >
-            <span>$ whoami</span>
-            <span className="text-primary-container">M. Hilmi F.A.</span>
-          </div>
+        <div data-hero style={{ opacity: 0 }} className="relative min-h-[27rem] sm:min-h-[34rem] lg:min-h-[40rem] flex items-center justify-center">
+          <GlobeScene reduced={reduced} />
         </div>
       </div>
 
@@ -1153,7 +1176,7 @@ function About() {
 
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-20">
         <Reveal delay={120}>
-          <div className="space-y-5 text-on-surface-variant/90 leading-relaxed">
+          <div className="about-copy space-y-5 text-on-surface-variant/90 leading-relaxed text-base sm:text-lg">
             <p>
               I&rsquo;m M. Hilmi Firjatullah Adi — an IT support specialist and full-stack developer. I keep systems
               running, diagnose the tricky ones, and build the tools that make operations easier.
@@ -1167,24 +1190,24 @@ function About() {
 
           <RevealGroup className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-8 mt-12" staggerMs={100}>
             {STATS.map((s) => (
-              <div key={s.label} className="reveal-item">
-                <div className="font-display font-semibold text-3xl sm:text-4xl text-cotton">
+              <div key={s.label} className="reveal-item stat-sticker">
+                <div className="font-display font-black text-3xl sm:text-4xl text-ink">
                   <Counter to={s.to} suffix={s.suffix} />
                 </div>
-                <div className="text-xs text-on-surface-variant/70 mt-1.5">{s.label}</div>
+                <div className="text-[10px] font-mono font-bold uppercase tracking-wide text-ink/70 mt-1.5">{s.label}</div>
               </div>
             ))}
           </RevealGroup>
         </Reveal>
 
         <Reveal delay={240}>
-          <dl className="border border-line-strong rounded-2xl bg-surface-container/50 divide-y divide-line overflow-hidden">
-            {FACTS.map((f) => (
-              <div key={f.label} className="flex items-center justify-between gap-6 px-6 py-4">
-                <dt className="font-mono text-[10px] tracking-[0.2em] text-on-surface-variant/60 uppercase">
+          <dl className="fact-card border-[3px] border-ink rounded-[1.75rem] bg-yellow divide-y-[3px] divide-ink overflow-hidden text-ink">
+            {FACTS.map((f, index) => (
+              <div key={f.label} className={`flex items-center justify-between gap-6 px-6 py-4 ${index === FACTS.length - 1 ? 'bg-lime' : ''}`}>
+                <dt className="font-mono text-[10px] font-black tracking-[0.2em] text-ink/60 uppercase">
                   {f.label}
                 </dt>
-                <dd className={`text-sm font-medium text-right ${f.accent ? 'text-active' : 'text-cotton'}`}>
+                <dd className="text-sm font-black text-right text-ink">
                   {f.value}
                 </dd>
               </div>
@@ -1210,17 +1233,17 @@ function Skills() {
         <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5" staggerMs={110}>
           {SKILLS.map((skill, i) => (
             <div key={skill.group} className="reveal-item h-full">
-              <CursorSpotlight className="rounded-2xl border border-line-strong bg-surface-container/60 hover:border-primary-container/50 transition-colors animated-border h-full">
+              <CursorSpotlight className={`skill-card skill-card-${i + 1} rounded-[1.75rem] border-[3px] border-ink bg-surface-container/80 animated-border h-full`}>
                 <Tilt className="relative p-8 h-full overflow-hidden">
                 <div className="flex items-center justify-between mb-8">
-                  <span className="w-11 h-11 rounded-xl border border-line-strong bg-surface-container-high/60 flex items-center justify-center text-primary-container relative z-[3]">
+                  <span className="skill-icon w-12 h-12 rounded-xl border-[3px] border-ink flex items-center justify-center text-ink relative z-[3]">
                     {skill.icon}
                   </span>
-                  <span className="font-mono text-[10px] tracking-[0.25em] text-on-surface-variant/50 uppercase relative z-[3]">
+                  <span className="font-display font-black text-5xl tracking-[-.08em] text-cotton/10 uppercase relative z-[3]">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                 </div>
-                <h3 className="font-display font-semibold text-lg text-cotton mb-5 relative z-[3]">{skill.group}</h3>
+                <h3 className="font-display font-black text-xl text-cotton mb-5 relative z-[3]">{skill.group}</h3>
                 <ul className="space-y-3.5 relative z-[3]">
                   {skill.items.map((item) => (
                     <li key={item} className="flex items-center gap-3 text-sm text-on-surface-variant group/item">
@@ -1285,6 +1308,27 @@ function toTitle(name: string) {
 
 type Project = { name: string; url: string; title: string; desc: string };
 
+const FALLBACK_PROJECTS: Project[] = [
+  {
+    name: 'infrastructure-operations.webp',
+    url: '/projects/infrastructure-operations.webp',
+    title: 'Infrastructure Operations',
+    desc: 'Reliable network, hardware, and system support shaped around clear documentation and calm incident response.',
+  },
+  {
+    name: 'support-automation.webp',
+    url: '/projects/support-automation.webp',
+    title: 'Support Automation',
+    desc: 'Purpose-built tools that turn repetitive support work into fast, traceable, and human-friendly workflows.',
+  },
+  {
+    name: 'full-stack-platforms.webp',
+    url: '/projects/full-stack-platforms.webp',
+    title: 'Full-Stack Platforms',
+    desc: 'Polished web products built from interface to database with a focus on clarity, speed, and dependable delivery.',
+  },
+];
+
 function Projects() {
   const [projects, setProjects] = useState<Project[] | null>(null);
 
@@ -1292,8 +1336,8 @@ function Projects() {
     let live = true;
     fetch('/api/projects')
       .then((r) => (r.ok ? r.json() : []))
-      .then((list) => live && setProjects(Array.isArray(list) ? list : []))
-      .catch(() => live && setProjects([]));
+      .then((list) => live && setProjects(Array.isArray(list) && list.length ? list : FALLBACK_PROJECTS))
+      .catch(() => live && setProjects(FALLBACK_PROJECTS));
     return () => {
       live = false;
     };
@@ -1311,14 +1355,14 @@ function Projects() {
       <div className="space-y-24 sm:space-y-32">
         {projects?.map((p, i) => (
           <Reveal key={p.name} delay={60}>
-            <article className="group relative grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+            <article className="project-row group relative grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
               <div className={`relative ${i % 2 === 1 ? 'lg:order-2' : ''}`}>
                 <div
-                  className="absolute -inset-3 rounded-[1.75rem] border border-line bg-gradient-to-br from-primary-container/15 to-transparent rotate-2 pointer-events-none transition-transform duration-700 group-hover:rotate-0"
+                  className={`project-backdrop absolute -inset-3 rounded-[1.75rem] border-[3px] border-ink pointer-events-none transition-transform duration-700 group-hover:rotate-0 project-backdrop-${(i % 3) + 1}`}
                   aria-hidden="true"
                 />
                 <Tilt className="relative">
-                  <div className="relative rounded-2xl overflow-hidden border border-line-strong bg-surface-container aspect-[16/11] animated-border">
+                  <div className="relative rounded-2xl overflow-hidden border-[3px] border-ink bg-surface-container aspect-[16/11] animated-border shadow-[10px_12px_0_var(--color-ink)]">
                     <ImageReveal className="absolute inset-0">
                       <SmartImage
                         src={p.url}
@@ -1336,16 +1380,16 @@ function Projects() {
               </div>
 
               <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
-                <div className="flex items-center gap-4 font-mono text-[11px] tracking-[0.2em] text-on-surface-variant/60 mb-5">
-                  <span className="text-primary-container font-semibold">{String(i + 1).padStart(2, '0')}</span>
+                <div className="flex items-center gap-4 font-mono text-[11px] font-bold tracking-[0.2em] text-on-surface-variant/70 mb-5">
+                  <span className="project-number">{String(i + 1).padStart(2, '0')}</span>
                   <span className="h-px w-10 bg-line-strong" aria-hidden="true" />
                   <span>{p.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, '_').toLowerCase()}</span>
                 </div>
-                <h3 className="font-display font-semibold tracking-[-0.02em] text-2xl sm:text-3xl text-cotton mb-4">
+                <h3 className="font-display font-black tracking-[-0.035em] text-3xl sm:text-4xl text-cotton mb-4">
                   {p.title || toTitle(p.name)}
                 </h3>
                 {p.desc && (
-                  <p className="text-on-surface-variant/90 leading-relaxed mb-7 max-w-md">{p.desc}</p>
+                  <p className="text-on-surface-variant/90 leading-relaxed mb-7 max-w-md text-base sm:text-lg">{p.desc}</p>
                 )}
               </div>
             </article>
@@ -1378,141 +1422,134 @@ function Projects() {
   );
 }
 
-// ponytail: static photo scroll-story (no AI video). Pan/zoom via anime onScroll scrub.
-const STORY = [
+const WORLD_STOPS = [
   {
     img: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.08.jpeg',
-    eyebrow: 'The bench',
+    eyebrow: '01 · The bench',
     title: 'From the workbench up.',
     body: 'Every system I touch gets the same treatment — diagnosed, stabilized, documented.',
     tags: ['Support', 'Troubleshooting', 'Maintenance'],
+    accent: '#ffd84d',
   },
   {
     img: '/foto/IMG_20260709_130641.jpg',
-    eyebrow: 'The code',
+    eyebrow: '02 · The code',
     title: 'Where maintenance meets software.',
     body: 'Support tools, dashboards, and full apps — shipped with Next.js & TypeScript.',
     tags: ['Next.js', 'TypeScript', 'Full-Stack'],
+    accent: '#42dcff',
   },
   {
     img: '/foto/WhatsApp%20Image%202026-07-09%20at%2012.06.57.jpeg',
-    eyebrow: 'On the floor',
+    eyebrow: '03 · On the floor',
     title: 'Hands-on support.',
     body: 'Close to the end user, on-site when it counts, calm under pressure.',
     tags: ['IT Support', 'Network', 'On-site'],
+    accent: '#ff5cbb',
   },
   {
     img: '/foto/WhatsApp%20Image%202026-07-11%20at%2012.08.26.jpeg',
-    eyebrow: 'The infrastructure',
+    eyebrow: '04 · The infrastructure',
     title: 'Keeping systems alive.',
     body: 'Servers, switches, and the connections between them — stable and monitored.',
     tags: ['Infrastructure', 'Server', 'Network'],
-  },
-  {
-    img: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.16.jpeg',
-    eyebrow: 'The details',
-    title: 'Close-up work.',
-    body: 'The unglamorous bits — cable, config, and clean diagnostics that keep it all honest.',
-    tags: ['Diagnostics', 'Hardware', 'Config'],
-  },
-  {
-    img: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.26.jpeg',
-    eyebrow: 'The result',
-    title: 'Systems that just work.',
-    body: 'Stable, dependable, well-documented — ready to help yours.',
-    tags: ['Open to work', 'Remote · Kendari'],
-    cta: true,
+    accent: '#b9ff66',
   },
 ];
 
-function StickyScene({ scene, index }: { scene: (typeof STORY)[number]; index: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLDivElement>(null);
+function WorldScroll() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
 
   useEffect(() => {
-    const el = ref.current;
-    const img = imgRef.current;
-    if (!el || !img) return;
-    if (reduced) return;
-    const obs: ScrollObserver = onScroll({
-      target: el,
-      sync: 30,
-      enter: 'top bottom',
-      leave: 'bottom top',
-      onUpdate: (self) => {
-        img.style.transform = `scale(${(1 + 0.14 * self.progress).toFixed(3)}) translate3d(0, ${(-46 * self.progress).toFixed(2)}px, 0)`;
-      },
-    });
+    const section = sectionRef.current;
+    const track = trackRef.current;
+    if (!section || !track || reduced) return;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      if (window.innerWidth < 900) {
+        track.style.transform = '';
+        return;
+      }
+      const rect = section.getBoundingClientRect();
+      const range = Math.max(1, section.offsetHeight - window.innerHeight);
+      const progress = Math.min(1, Math.max(0, -rect.top / range));
+      const travel = Math.max(0, track.scrollWidth - window.innerWidth + window.innerWidth * 0.12);
+      track.style.transform = `translate3d(${(-travel * progress).toFixed(1)}px, 0, 0)`;
+      if (progressRef.current) progressRef.current.style.transform = `scaleX(${progress})`;
+    };
+    const onUpdate = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onUpdate, { passive: true });
+    window.addEventListener('resize', onUpdate);
     return () => {
-      obs.revert();
+      window.removeEventListener('scroll', onUpdate);
+      window.removeEventListener('resize', onUpdate);
+      cancelAnimationFrame(raf);
     };
   }, [reduced]);
 
   return (
-    <div className="relative h-[150vh]">
-      <div
-        ref={ref}
-        className="sticky top-0 h-screen overflow-hidden flex items-center border-b border-line-strong"
-      >
-        <div
-          ref={imgRef}
-          className="absolute inset-0 will-change-transform"
-          style={{ background: `center/cover no-repeat url(${scene.img})` }}
-          aria-hidden="true"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-surface/95 via-surface/45 to-surface/10" aria-hidden="true" />
-        <div className="relative mx-auto max-w-6xl px-5 sm:px-8 w-full pb-16 pt-40">
-          <Reveal className="max-w-xl">
-            <div className="flex items-center gap-4 font-mono text-xs tracking-[0.25em] uppercase text-on-surface-variant/80 mb-5">
-              <span className="text-primary-container font-semibold">{String(index + 1).padStart(2, '0')}</span>
-              <span>{scene.eyebrow}</span>
-              <span className="h-px flex-1 bg-line-strong" />
-            </div>
-            <h2 className="font-display font-semibold tracking-[-0.02em] text-cotton text-3xl sm:text-5xl leading-[1.06] mb-5">
-              {scene.title}
-            </h2>
-            <p className="text-on-surface-variant/90 leading-relaxed mb-6 max-w-md">{scene.body}</p>
-            <div className="flex flex-wrap gap-2.5">
-              {scene.tags.map((t) => (
-                <span key={t} className="rounded-full border border-line-strong bg-surface-container/70 px-4 py-1.5 text-xs font-medium text-on-surface-variant">
-                  {t}
-                </span>
-              ))}
-            </div>
-            {scene.cta && (
-              <Reveal delay={80}>
-                <a
-                  href="#contact"
-                  className="mt-8 inline-flex items-center gap-2.5 rounded-full bg-primary-container text-on-primary-container px-7 py-3.5 text-sm font-semibold hover:opacity-90 transition-opacity"
-                >
-                  Hire me
-                  <ArrowUpRightIcon className="w-4 h-4" />
-                </a>
-              </Reveal>
-            )}
-          </Reveal>
+    <section id="story" ref={sectionRef} className="world-section relative border-y border-line-strong scroll-mt-16">
+      <div className="world-sticky sticky top-0 h-screen overflow-hidden flex items-center">
+        <div className="absolute inset-0 world-grid pointer-events-none" aria-hidden="true" />
+        <div className="absolute left-5 sm:left-8 top-24 z-20 flex items-center gap-4 font-mono text-[10px] sm:text-xs font-bold tracking-[0.22em] text-on-surface-variant">
+          <span className="text-yellow">04</span>
+          <span>SCROLL THE WORLD</span>
+          <span className="hidden sm:block w-24 h-px bg-line-strong" />
         </div>
-      </div>
-    </div>
-  );
-}
+        <div ref={trackRef} className="world-track flex items-stretch gap-8 sm:gap-12 px-[7vw] will-change-transform">
+          <article className="world-intro shrink-0 flex flex-col justify-center w-[84vw] lg:w-[62vw] xl:w-[48vw] pr-6">
+            <span className="world-kicker">FIELD NOTES / 2026</span>
+            <h2 className="font-display font-black tracking-[-0.055em] text-[clamp(3.4rem,8vw,7.8rem)] leading-[.9] text-cotton mt-5">
+              REAL<br />WORK.<br /><span className="text-pink">REAL</span> WORLD.
+            </h2>
+            <p className="mt-7 max-w-lg text-on-surface-variant text-base sm:text-lg leading-relaxed">
+              Drag your eyes sideways while the page moves down. A small world tour through the systems, code, and hands-on work behind every result.
+            </p>
+            <div className="mt-8 flex items-center gap-3 font-mono text-[11px] font-bold tracking-[.18em] text-cyan">
+              KEEP SCROLLING <span className="text-2xl">→</span>
+            </div>
+          </article>
 
-function ScrollStory() {
-  return (
-    <section id="story" className="relative scroll-mt-16">
-      <div className="mx-auto max-w-6xl px-5 sm:px-8 pt-28 sm:pt-36">
-        <SectionHeading
-          index="0S"
-          kicker="The journey"
-          title="Scroll through how I work."
-          useFlip
-        />
-      </div>
-      <div className="mt-10">
-        {STORY.map((s, i) => (
-          <StickyScene key={s.eyebrow} scene={s} index={i} />
-        ))}
+          {WORLD_STOPS.map((scene, index) => (
+            <article
+              key={scene.eyebrow}
+              className={`world-card world-card-${index + 1} shrink-0 w-[84vw] sm:w-[70vw] lg:w-[56vw] xl:w-[46rem]`}
+              style={{ '--scene-accent': scene.accent } as CSSProperties}
+            >
+              <div className="world-card-image">
+                <SmartImage src={scene.img} alt={`${scene.title} — field work`} className="absolute inset-0 w-full h-full object-cover" fallback={<ProjectFallback name={scene.title} />} />
+                <div className="world-card-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
+              </div>
+              <div className="world-card-copy">
+                <p className="font-mono text-[10px] sm:text-xs font-bold tracking-[.18em] uppercase" style={{ color: scene.accent }}>{scene.eyebrow}</p>
+                <h3 className="font-display font-black text-2xl sm:text-4xl tracking-[-.03em] text-cotton mt-3">{scene.title}</h3>
+                <p className="text-on-surface-variant mt-3 leading-relaxed max-w-xl">{scene.body}</p>
+                <div className="flex flex-wrap gap-2 mt-5">
+                  {scene.tags.map((tag) => <span key={tag} className="world-tag">{tag}</span>)}
+                </div>
+              </div>
+            </article>
+          ))}
+
+          <article className="world-finale shrink-0 w-[84vw] lg:w-[48vw] flex flex-col items-start justify-center pr-[8vw]">
+            <div className="finale-face" aria-hidden="true"><span>•</span><span>ᴗ</span><span>•</span></div>
+            <p className="world-kicker mt-7">FINAL DESTINATION</p>
+            <h2 className="font-display font-black tracking-[-.05em] text-4xl sm:text-6xl text-cotton mt-4">YOUR NEXT<br /><span className="text-lime">BIG THING.</span></h2>
+            <a href="#contact" className="cartoon-button cartoon-button-primary inline-flex items-center gap-2 mt-8 rounded-full px-7 py-3.5 text-sm font-black">
+              Let&rsquo;s make it real <ArrowUpRightIcon className="w-4 h-4" />
+            </a>
+          </article>
+        </div>
+        <div className="absolute bottom-6 left-[7vw] right-[7vw] h-1 rounded-full bg-line-strong overflow-hidden">
+          <div ref={progressRef} className="h-full origin-left bg-yellow" style={{ transform: 'scaleX(0)' }} />
+        </div>
       </div>
     </section>
   );
@@ -1530,14 +1567,14 @@ function Contact() {
         />
 
         <Reveal delay={120}>
-          <CursorSpotlight className="relative rounded-3xl border border-line-strong bg-surface-container/50 p-8 sm:p-14 flex flex-col lg:flex-row lg:items-end justify-between gap-10 overflow-hidden animated-border">
+          <CursorSpotlight className="contact-card relative rounded-[2rem] border-[4px] border-ink bg-cyan p-8 sm:p-12 grid lg:grid-cols-[1fr_.82fr] items-center gap-8 overflow-hidden text-ink">
             <div
               className="absolute -top-24 -right-24 w-72 h-72 rounded-full pointer-events-none"
               style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--color-primary-container) 16%, transparent) 0%, transparent 68%)' }}
               aria-hidden="true"
             />
             <div className="relative z-[3] max-w-xl">
-              <p className="text-on-surface-variant/90 leading-relaxed mb-8">
+              <p className="text-ink/80 font-medium text-lg leading-relaxed mb-8">
                 Open for freelance, contract, and full-time roles — remote or based in Kendari. If you have a system
                 to stabilize or a product to ship, I&rsquo;d love to hear about it.
               </p>
@@ -1548,7 +1585,7 @@ function Contact() {
                     href={s.href}
                     target={s.href.startsWith('http') ? '_blank' : undefined}
                     rel={s.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-                    className="inline-flex items-center gap-2.5 rounded-full border border-line-strong bg-surface-container/60 px-5 py-2.5 text-sm font-medium text-on-surface-variant hover:text-primary-container hover:border-primary-container/50 transition-colors"
+                    className="inline-flex items-center gap-2.5 rounded-full border-2 border-ink bg-cotton px-5 py-2.5 text-sm font-black text-ink shadow-[3px_4px_0_var(--color-ink)] hover:-translate-y-1 transition-transform"
                   >
                     {s.icon}
                     {s.label}
@@ -1557,16 +1594,24 @@ function Contact() {
               </div>
             </div>
 
-            <Magnetic strength={0.25}>
-              <a
-                href="mailto:m.hilmi@example.com"
-                className="group relative inline-flex items-center gap-3 rounded-full bg-primary-container text-on-primary-container px-8 py-5 text-base font-semibold hover:opacity-90 transition-opacity"
-                style={{ boxShadow: '0 14px 40px -12px color-mix(in srgb, var(--color-primary-container) 60%, transparent)' }}
-              >
-                Start a conversation
-                <ArrowUpRightIcon className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </a>
-            </Magnetic>
+            <div className="contact-action relative z-[3] flex flex-col items-center">
+              {/* eslint-disable-next-line @next/next/no-img-element -- generated transparent portfolio artwork */}
+              <img
+                src="/assets/hilmi-workstation-island.png"
+                alt="3D workstation with server, laptop, and network cables"
+                className="contact-asset w-full max-w-md"
+                loading="lazy"
+              />
+              <Magnetic strength={0.25}>
+                <a
+                  href="mailto:hello@hilmi.my.id"
+                  className="cartoon-button cartoon-button-primary group relative inline-flex items-center gap-3 rounded-full px-8 py-5 text-base font-black"
+                >
+                  Start a conversation
+                  <ArrowUpRightIcon className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </a>
+              </Magnetic>
+            </div>
           </CursorSpotlight>
         </Reveal>
       </div>
@@ -1660,14 +1705,14 @@ export default function Portfolio() {
         <About />
         <Skills />
         <Projects />
-        <ScrollStory />
+        <WorldScroll />
         <Contact />
       </main>
 
       <footer className="relative z-10 border-t border-line-strong">
         <div className="mx-auto max-w-6xl px-5 sm:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-5">
           <div className="flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-primary-container" aria-hidden="true" />
+            <span className="w-3 h-3 rounded-full bg-lime border-2 border-ink" aria-hidden="true" />
             <span className="font-display font-semibold text-cotton">
               hilmi<span className="text-primary-container">.</span>my.id
             </span>
@@ -1688,25 +1733,16 @@ export default function Portfolio() {
   );
 }
 
-function ProfileFallback() {
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-surface-container-high via-surface-container to-surface-dim">
-      <div className="w-16 h-16 rounded-full border border-primary-container/40 flex items-center justify-center font-display font-bold text-xl text-primary-container">
-        MH
-      </div>
-      <span className="font-mono text-[10px] tracking-[0.2em] text-on-surface-variant/60">PHOTO UNAVAILABLE</span>
-    </div>
-  );
-}
-
 function ProjectFallback({ name }: { name: string }) {
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-surface-container-high via-surface-container to-surface-dim">
-      <span className="font-display font-bold text-4xl sm:text-5xl text-primary-container/25 tracking-tight select-none">
+    <div className="project-fallback absolute inset-0 flex flex-col items-center justify-center gap-5 overflow-hidden">
+      <span className="fallback-orbit" aria-hidden="true" />
+      <span className="fallback-mark" aria-hidden="true">{name.slice(0, 1)}</span>
+      <span className="relative z-[2] max-w-[80%] text-center font-display font-black text-3xl sm:text-5xl text-ink tracking-[-.04em] select-none">
         {name}
       </span>
-      <span className="font-mono text-[10px] tracking-[0.25em] text-on-surface-variant/50">
-        PREVIEW UNAVAILABLE
+      <span className="relative z-[2] font-mono text-[10px] font-black tracking-[0.25em] text-ink/60">
+        CASE STUDY · HILMI
       </span>
     </div>
   );

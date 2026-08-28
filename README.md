@@ -1,11 +1,25 @@
-<div align="center">
+# M. Hilmi F.A. — Portfolio
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+A colorful, motion-led portfolio for an IT Support specialist and Full-Stack Developer. The experience combines oversized editorial typography, original 3D artwork, responsive horizontal world-scroll storytelling, interactive tilt effects, and accessible reduced-motion fallbacks.
 
-  <h1>Built with AI Studio</h2>
+## Run locally
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+```bash
+npm install
+npm run dev
+```
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+Open [http://localhost:3000](http://localhost:3000).
 
-</div>
+## Content setup
+
+Copy `.env.example` to `.env.local` and configure the optional image repository variables to load live project images and tech-stack data. Without them, the public portfolio uses polished local fallback case studies.
+
+## Quality checks
+
+```bash
+npm run lint
+npm run build
+```
+
+Built with Next.js 16, React 19, Tailwind CSS 4, and anime.js.
