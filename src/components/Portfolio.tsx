@@ -79,6 +79,111 @@ function useReducedMotion() {
   );
 }
 
+function CinematicLoader({ reduced, onComplete }: { reduced: boolean; onComplete: () => void }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    let live = true;
+    let raf = 0;
+    let value = 0;
+    let resourcesReady = false;
+    const started = performance.now();
+    const minimum = reduced ? 180 : 1750;
+    const preload = (src: string) => new Promise<void>((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve();
+      image.onerror = () => resolve();
+      image.src = src;
+    });
+    const fontsReady = 'fonts' in document ? document.fonts.ready.then(() => undefined) : Promise.resolve();
+    Promise.all([
+      fontsReady,
+      preload('/assets/hilmi-orbit-world.png'),
+      preload('/assets/hilmi-workstation-island.png'),
+    ]).finally(() => { resourcesReady = true; });
+
+    const finish = () => {
+      if (!live) return;
+      setProgress(100);
+      if (reduced) {
+        document.body.style.overflow = previousOverflow;
+        onComplete();
+        return;
+      }
+      animate(overlay.querySelectorAll<HTMLElement>('[data-loader-piece]'), {
+        opacity: [1, 0],
+        translateY: [0, -32],
+        duration: 480,
+        delay: stagger(45),
+        ease: 'inQuad',
+      });
+      animate(overlay, {
+        translateY: ['0%', '-105%'],
+        duration: 1050,
+        delay: 260,
+        ease: 'inOutExpo',
+        onComplete: () => {
+          if (!live) return;
+          document.body.style.overflow = previousOverflow;
+          onComplete();
+        },
+      });
+    };
+
+    const tick = (now: number) => {
+      if (!live) return;
+      const elapsed = now - started;
+      const ceiling = resourcesReady ? 100 : 92;
+      const target = Math.min(ceiling, (elapsed / minimum) * 100);
+      value += (target - value) * 0.085;
+      if (resourcesReady && elapsed >= minimum) value += (100 - value) * 0.18;
+      setProgress(Math.min(99, Math.floor(value)));
+      if (resourcesReady && elapsed >= minimum && value > 98.7) finish();
+      else raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    const failsafe = window.setTimeout(() => { resourcesReady = true; }, 4200);
+
+    return () => {
+      live = false;
+      cancelAnimationFrame(raf);
+      clearTimeout(failsafe);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [onComplete, reduced]);
+
+  return (
+    <div ref={overlayRef} className="cinematic-loader fixed inset-0 z-[100] overflow-hidden bg-surface-dim text-cotton" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-label="Loading portfolio">
+      <div className="loader-grid absolute inset-0" aria-hidden="true" />
+      <div className="loader-orbit loader-orbit-a" aria-hidden="true" />
+      <div className="loader-orbit loader-orbit-b" aria-hidden="true" />
+      <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-10">
+        <div data-loader-piece className="flex items-center justify-between font-mono text-[10px] font-bold tracking-[.22em] text-on-surface-variant">
+          <span>HILMI / PORTFOLIO</span><span>KENDARI · ID</span>
+        </div>
+        <div className="loader-center mx-auto w-full max-w-6xl">
+          <p data-loader-piece className="mb-4 font-mono text-[10px] font-bold tracking-[.26em] text-cyan sm:text-xs">INITIALIZING DIGITAL WORLD</p>
+          <div className="flex items-end justify-between gap-4">
+            <div data-loader-piece className="font-display text-[clamp(5rem,19vw,17rem)] font-black leading-[.75] tracking-[-.075em]">H<span className="text-pink">.</span></div>
+            <div data-loader-piece className="font-display text-[clamp(3rem,11vw,9rem)] font-black leading-none tracking-[-.07em] tabular-nums">{String(progress).padStart(2, '0')}<span className="text-[.32em] text-yellow">%</span></div>
+          </div>
+          <div data-loader-piece className="mt-7 h-2 overflow-hidden rounded-full border-2 border-ink bg-cotton shadow-[4px_5px_0_var(--color-ink)]">
+            <div className="h-full origin-left bg-lime transition-transform duration-100" style={{ transform: `scaleX(${progress / 100})` }} />
+          </div>
+        </div>
+        <div data-loader-piece className="flex items-center justify-between font-mono text-[10px] font-bold tracking-[.16em] text-on-surface-variant">
+          <span>IT SUPPORT × FULL-STACK</span><span className="text-active">SYSTEMS ONLINE</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ponytail: tiny Lenis-style lerp on fine pointers; native scroll elsewhere. Rung 5 — no new dep.
 function SmoothScroll() {
   const reduced = useReducedMotion();
@@ -138,6 +243,38 @@ function SmoothScroll() {
       window.removeEventListener('scroll', onNativeScroll);
       window.removeEventListener('click', onAnchorClick, { capture: true } as EventListenerOptions);
       cancelAnimationFrame(raf);
+    };
+  }, [reduced]);
+
+  return null;
+}
+
+function ScrollMomentum() {
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    if (reduced) return;
+    const root = document.documentElement;
+    let last = window.scrollY;
+    let velocity = 0;
+    let raf = 0;
+    const frame = () => {
+      velocity *= 0.86;
+      root.style.setProperty('--scroll-v', velocity.toFixed(2));
+      if (Math.abs(velocity) > 0.02) raf = requestAnimationFrame(frame);
+      else raf = 0;
+    };
+    const onScroll = () => {
+      const next = window.scrollY;
+      velocity = Math.max(-12, Math.min(12, velocity + (next - last) * 0.16));
+      last = next;
+      if (!raf) raf = requestAnimationFrame(frame);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(raf);
+      root.style.removeProperty('--scroll-v');
     };
   }, [reduced]);
 
@@ -295,18 +432,27 @@ function Reveal({
     let anim: JSAnimation | null = null;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !anim) {
+        const entry = entries[0];
+        anim?.pause();
+        if (entry.isIntersecting) {
           anim = animate(el, {
-            opacity: [0, 1],
-            translateY: [y, 0],
+            opacity: 1,
+            translateY: 0,
             duration: 1000,
             delay,
             ease: 'outExpo',
           });
-          io.disconnect();
+        } else {
+          anim = animate(el, {
+            opacity: 0,
+            translateY: entry.boundingClientRect.top < 0 ? -y * 0.45 : y * 0.65,
+            duration: 520,
+            delay: 0,
+            ease: 'inOutQuad',
+          });
         }
       },
-      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+      { threshold: 0, rootMargin: '-7% 0px -7% 0px' }
     );
     io.observe(el);
     return () => {
@@ -354,18 +500,27 @@ function RevealGroup({
     let anim: JSAnimation | null = null;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !anim) {
+        const entry = entries[0];
+        anim?.pause();
+        if (entry.isIntersecting) {
           anim = animate(items, {
-            opacity: [0, 1],
-            translateY: [y, 0],
+            opacity: 1,
+            translateY: 0,
             duration: 900,
             delay: stagger(staggerMs, { start: delay }),
             ease: 'outExpo',
           });
-          io.disconnect();
+        } else {
+          anim = animate(items, {
+            opacity: 0,
+            translateY: entry.boundingClientRect.top < 0 ? -y * 0.35 : y * 0.5,
+            duration: 450,
+            delay: stagger(25),
+            ease: 'inOutQuad',
+          });
         }
       },
-      { threshold: 0.1, rootMargin: '0px 0px -6% 0px' }
+      { threshold: 0, rootMargin: '-6% 0px -6% 0px' }
     );
     io.observe(el);
     return () => {
@@ -586,12 +741,12 @@ function SmartImage({
 
   if (status === 'ok') {
     // eslint-disable-next-line @next/next/no-img-element -- remote images w/ runtime fallback
-    return <img src={src} alt={alt} className={className} loading="lazy" />;
+    return <img src={src} alt={alt} className={`${className ?? ''} image-loaded`} loading="lazy" />;
   }
   if (status === 'error' && fallback) {
     return <>{fallback}</>;
   }
-  return <div className={className} aria-hidden="true" style={{ background: 'var(--color-surface-container-high)' }} />;
+  return <div className={`${className ?? ''} image-skeleton`} aria-hidden="true" />;
 }
 
 function CursorSpotlight({
@@ -989,12 +1144,13 @@ function GlobeScene({ reduced }: { reduced: boolean }) {
   );
 }
 
-function Hero({ reduced }: { reduced: boolean }) {
+function Hero({ reduced, ready }: { reduced: boolean; ready: boolean }) {
   const heroRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const el = heroRef.current;
     if (!el) return;
+    if (!ready) return;
     if (reduced) {
       el.querySelectorAll<HTMLElement>('[data-hero]').forEach((n) => {
         n.style.opacity = '1';
@@ -1013,7 +1169,7 @@ function Hero({ reduced }: { reduced: boolean }) {
     return () => {
       anim.pause();
     };
-  }, [reduced]);
+  }, [ready, reduced]);
 
   useEffect(() => {
     const el = heroRef.current;
@@ -1666,6 +1822,7 @@ function ScrollChrome() {
 
 export default function Portfolio() {
   const [theme, setTheme] = useState('dark');
+  const [introReady, setIntroReady] = useState(false);
   const reduced = useReducedMotion();
 
   useEffect(() => {
@@ -1683,24 +1840,26 @@ export default function Portfolio() {
 
   return (
     <div className="min-h-screen text-on-surface relative">
+      {!introReady && <CinematicLoader reduced={reduced} onComplete={() => setIntroReady(true)} />}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
         <div
-          className="absolute top-[-22%] right-[-12%] w-[58vw] h-[58vw] rounded-full"
+          className="ambient-orb ambient-orb-a absolute top-[-22%] right-[-12%] w-[58vw] h-[58vw] rounded-full"
           style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--color-primary-container) 9%, transparent) 0%, transparent 65%)' }}
         />
         <div
-          className="absolute bottom-[-26%] left-[-14%] w-[52vw] h-[52vw] rounded-full"
+          className="ambient-orb ambient-orb-b absolute bottom-[-26%] left-[-14%] w-[52vw] h-[52vw] rounded-full"
           style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--color-secondary) 7%, transparent) 0%, transparent 65%)' }}
         />
       </div>
 
       <SmoothScroll />
+      <ScrollMomentum />
       <ScrollChrome />
       <div className="fixed inset-0 pointer-events-none z-[1] grain" aria-hidden="true" />
       <Navbar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
 
       <main className="relative z-10">
-        <Hero reduced={reduced} />
+        <Hero reduced={reduced} ready={introReady} />
         <Marquee items={MARQUEE_ITEMS} />
         <About />
         <Skills />

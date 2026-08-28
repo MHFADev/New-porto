@@ -15,6 +15,9 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+  const [notice, setNotice] = useState('');
 
   async function load() {
     const res = await fetch('/api/admin/data');
@@ -70,7 +73,43 @@ export default function AdminPage() {
       return;
     }
     setError('');
-    alert('Saved');
+    setNotice('Project details saved to GitHub.');
+  }
+
+  async function uploadFiles(input: FileList | File[]) {
+    const files = Array.from(input).slice(0, 6);
+    if (!files.length) return;
+    setError('');
+    setNotice('');
+
+    const added: Project[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'].includes(file.type)) {
+        setError(`${file.name}: unsupported image format.`);
+        continue;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        setError(`${file.name}: image must be 8 MB or smaller.`);
+        continue;
+      }
+      setUploading(`${i + 1}/${files.length}`);
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/admin/images', { method: 'POST', body: form });
+      const data = (await res.json().catch(() => ({}))) as { project?: Project; error?: string };
+      if (!res.ok || !data.project) {
+        setError(data.error ?? `Failed to upload ${file.name}`);
+        continue;
+      }
+      added.push(data.project);
+    }
+
+    setUploading('');
+    if (added.length) {
+      setProjects((prev) => [...added, ...prev]);
+      setNotice(`${added.length} image${added.length === 1 ? '' : 's'} uploaded. Add the title and description, then save.`);
+    }
   }
 
   function toggleIcon(slug: string) {
@@ -124,7 +163,8 @@ export default function AdminPage() {
         </Link>
       </div>
 
-      {error && <p className="text-sm text-active mb-4">{error}</p>}
+      {error && <p className="rounded-xl border border-primary-container/40 bg-primary-container/10 px-4 py-3 text-sm text-primary-container mb-4">{error}</p>}
+      {notice && <p className="rounded-xl border border-active/40 bg-active/10 px-4 py-3 text-sm text-active mb-4">{notice}</p>}
 
       <section className="mb-10">
         <h2 className="font-display text-lg font-semibold text-cotton mb-1">Tech Stack</h2>
@@ -163,7 +203,51 @@ export default function AdminPage() {
       </section>
 
       <section className="mb-6">
-        <h2 className="font-display text-lg font-semibold text-cotton mb-1">Projects</h2>
+        <div className="flex items-end justify-between gap-4 mb-4">
+          <div>
+            <h2 className="font-display text-lg font-semibold text-cotton mb-1">Projects</h2>
+            <p className="text-sm text-on-surface-variant">
+              Upload up to 6 images at once. JPG, PNG, WebP, AVIF, or GIF — max 8 MB each.
+            </p>
+          </div>
+          <span className="hidden sm:inline font-mono text-[10px] tracking-[.16em] text-on-surface-variant/50">GITHUB STORAGE</span>
+        </div>
+
+        <label
+          onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
+          onDragOver={(e) => e.preventDefault()}
+          onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragActive(false);
+            void uploadFiles(e.dataTransfer.files);
+          }}
+          className={`group mb-7 flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 text-center transition-colors ${
+            dragActive
+              ? 'border-cyan bg-cyan/10'
+              : 'border-line-strong bg-surface-container/50 hover:border-primary-container/70 hover:bg-primary-container/5'
+          }`}
+        >
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+            multiple
+            disabled={!!uploading}
+            onChange={(e) => {
+              if (e.target.files) void uploadFiles(e.target.files);
+              e.currentTarget.value = '';
+            }}
+            className="sr-only"
+          />
+          <span className="mb-3 grid h-12 w-12 place-items-center rounded-xl border-2 border-ink bg-cyan text-2xl font-black text-ink shadow-[4px_5px_0_var(--color-ink)] transition-transform group-hover:-translate-y-1">
+            {uploading ? '↻' : '↑'}
+          </span>
+          <span className="font-display font-bold text-cotton">
+            {uploading ? `Uploading ${uploading}…` : 'Drop project images here'}
+          </span>
+          <span className="mt-1 text-xs text-on-surface-variant/70">or click to browse your device</span>
+        </label>
+
         <p className="text-sm text-on-surface-variant mb-4">
           {projects.length} image{projects.length === 1 ? '' : 's'} in repo. Title & description go to{' '}
           <code className="font-mono text-primary-container">meta.json</code>.

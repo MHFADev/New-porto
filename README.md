@@ -13,7 +13,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Content setup
 
-Copy `.env.example` to `.env.local` and configure the optional image repository variables to load live project images and tech-stack data. Without them, the public portfolio uses polished local fallback case studies.
+Copy `.env.example` to `.env.local` and configure the image repository variables to load live project images and tech-stack data. The fine-grained GitHub token needs repository Contents read/write access so authenticated admins can upload images from `/admin`. Without these variables, the public portfolio uses polished local fallback case studies.
 
 ## Quality checks
 

@@ -74,6 +74,35 @@ body {
   overflow-x: hidden;
 }
 
+.cinematic-loader { will-change: transform; }
+.loader-grid {
+  opacity: .55;
+  background-image:
+    linear-gradient(to right, var(--color-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-line) 1px, transparent 1px),
+    radial-gradient(circle, color-mix(in srgb, var(--color-cyan) 38%, transparent) 1px, transparent 1.5px);
+  background-size: 68px 68px, 68px 68px, 22px 22px;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 15%, transparent 78%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 15%, transparent 78%);
+}
+.loader-center { perspective: 900px; }
+.loader-orbit { position: absolute; width: min(58vw, 44rem); aspect-ratio: 1; left: 50%; top: 50%; border: 2px solid color-mix(in srgb, var(--color-cyan) 32%, transparent); border-radius: 50%; animation: loader-spin 11s linear infinite; }
+.loader-orbit::before,
+.loader-orbit::after { content: ""; position: absolute; width: 1rem; height: 1rem; border: 2px solid var(--color-ink); border-radius: 50%; background: var(--color-pink); box-shadow: 3px 4px 0 var(--color-ink); }
+.loader-orbit::before { left: 8%; top: 20%; }
+.loader-orbit::after { right: 10%; bottom: 18%; background: var(--color-lime); }
+.loader-orbit-a { transform: translate(-50%, -50%) rotate(-12deg); }
+.loader-orbit-b { width: min(35vw, 27rem); border-style: dashed; border-color: color-mix(in srgb, var(--color-pink) 40%, transparent); animation-direction: reverse; animation-duration: 8s; }
+.ambient-orb { transform: translate3d(0, calc(var(--scroll-v, 0) * 1.6px), 0); transition: transform 80ms linear; }
+.ambient-orb-b { transform: translate3d(0, calc(var(--scroll-v, 0) * -1.2px), 0); }
+.image-loaded { animation: image-arrive .85s cubic-bezier(.16,1,.3,1) both; }
+.image-skeleton { overflow: hidden; background: var(--color-surface-container-high); }
+.image-skeleton::after { content: ""; position: absolute; inset: 0; translate: -120% 0; background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--color-cyan) 22%, transparent) 48%, color-mix(in srgb, var(--color-pink) 20%, transparent) 55%, transparent 80%); animation: skeleton-sweep 1.35s ease-in-out infinite; }
+
+@keyframes loader-spin { to { rotate: 360deg; } }
+@keyframes image-arrive { from { opacity: 0; scale: 1.06; filter: blur(10px) saturate(.7); } to { opacity: 1; scale: 1; filter: blur(0) saturate(1); } }
+@keyframes skeleton-sweep { to { translate: 120% 0; } }
+
 .hero-playground {
   background:
     radial-gradient(circle at 78% 42%, color-mix(in srgb, var(--color-cyan) 14%, transparent), transparent 29%),

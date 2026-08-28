@@ -28,9 +28,13 @@ function headers(cfg: RepoConfig, accept: string) {
   };
 }
 
-export async function githubFetch(cfg: RepoConfig, path: string, accept: 'raw' | 'json') {
+function contentUrl(cfg: RepoConfig, path: string) {
   const encoded = path.split('/').map(encodeURIComponent).join('/');
-  return fetch(`${GH_API}/${cfg.owner}/${cfg.repo}/contents/${encoded}`, {
+  return `${GH_API}/${cfg.owner}/${cfg.repo}/contents/${encoded}`;
+}
+
+export async function githubFetch(cfg: RepoConfig, path: string, accept: 'raw' | 'json') {
+  return fetch(contentUrl(cfg, path), {
     headers: headers(cfg, accept === 'raw' ? 'application/vnd.github.raw' : 'application/vnd.github+json'),
     cache: 'no-store',
   });
@@ -53,8 +57,8 @@ export async function writeMeta(meta: Meta) {
   const cfg = imageRepoConfig();
   if (!cfg) return { ok: false, error: 'not configured' };
   const path = `${projectPath()}/meta.json`;
-  const encoded = path.split('/').map(encodeURIComponent).join('/');
-  const existing = await fetch(`${GH_API}/${cfg.owner}/${cfg.repo}/contents/${encoded}`, {
+  const url = contentUrl(cfg, path);
+  const existing = await fetch(url, {
     headers: headers(cfg, 'application/vnd.github+json'),
     cache: 'no-store',
   });
@@ -64,7 +68,7 @@ export async function writeMeta(meta: Meta) {
     content: Buffer.from(JSON.stringify(meta, null, 2)).toString('base64'),
   };
   if (sha) body.sha = sha;
-  const res = await fetch(`${GH_API}/${cfg.owner}/${cfg.repo}/contents/${encoded}`, {
+  const res = await fetch(url, {
     method: 'PUT',
     headers: headers(cfg, 'application/vnd.github+json'),
     body: JSON.stringify(body),
@@ -75,6 +79,40 @@ export async function writeMeta(meta: Meta) {
     return { ok: false, error: err?.message || `GitHub ${res.status}` };
   }
   return { ok: true };
+}
+
+export function safeImageName(name: string) {
+  const dot = name.lastIndexOf('.');
+  const ext = dot > 0 ? name.slice(dot).toLowerCase() : '';
+  const base = (dot > 0 ? name.slice(0, dot) : name)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 72) || 'project';
+  return `${base}-${Date.now()}${ext}`;
+}
+
+export async function uploadProjectImage(name: string, bytes: Uint8Array) {
+  const cfg = imageRepoConfig();
+  if (!cfg) return { ok: false as const, error: 'IMAGE_REPO_URL / IMAGE_REPO_PAT not set' };
+  const fileName = safeImageName(name);
+  const path = `${projectPath()}/${fileName}`;
+  const res = await fetch(contentUrl(cfg, path), {
+    method: 'PUT',
+    headers: headers(cfg, 'application/vnd.github+json'),
+    body: JSON.stringify({
+      message: `Add portfolio project image: ${fileName}`,
+      content: Buffer.from(bytes).toString('base64'),
+    }),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => null)) as { message?: string } | null;
+    return { ok: false as const, error: err?.message || `GitHub ${res.status}` };
+  }
+  return { ok: true as const, fileName, path };
 }
 
 export function imageUrl(...segments: string[]) {
