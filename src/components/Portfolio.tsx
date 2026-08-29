@@ -6,6 +6,7 @@ import { animate, onScroll, stagger } from 'animejs';
 import type { JSAnimation, ScrollObserver } from 'animejs';
 import { DEFAULT_PROFILE } from '@/lib/profile';
 import type { Profile } from '@/lib/profile';
+import LoaderModel3D from '@/components/LoaderModel3D';
 
 const NAV = [
   { label: 'About', href: '#about' },
@@ -67,7 +68,9 @@ function useReducedMotion() {
 
 function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; profile: Profile; onComplete: () => void }) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const modelReadyRef = useRef(reduced);
   const [progress, setProgress] = useState(0);
+  const markModelReady = useCallback(() => { modelReadyRef.current = true; }, []);
 
   useEffect(() => {
     const overlay = overlayRef.current;
@@ -78,8 +81,9 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
     let raf = 0;
     let value = 0;
     let resourcesReady = false;
+    let finishing = false;
     const started = performance.now();
-    const minimum = reduced ? 180 : 1750;
+    const minimum = reduced ? 180 : 1500;
     const preload = (src: string) => new Promise<void>((resolve) => {
       const image = new Image();
       image.onload = () => resolve();
@@ -94,7 +98,9 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
     ]).finally(() => { resourcesReady = true; });
 
     const finish = () => {
-      if (!live) return;
+      if (!live || finishing) return;
+      finishing = true;
+      cancelAnimationFrame(raf);
       setProgress(100);
       if (reduced) {
         document.body.style.overflow = previousOverflow;
@@ -124,16 +130,21 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
     const tick = (now: number) => {
       if (!live) return;
       const elapsed = now - started;
-      const ceiling = resourcesReady ? 100 : 92;
+      const everythingReady = resourcesReady && modelReadyRef.current;
+      const ceiling = everythingReady ? 100 : 92;
       const target = Math.min(ceiling, (elapsed / minimum) * 100);
       value += (target - value) * 0.085;
-      if (resourcesReady && elapsed >= minimum) value += (100 - value) * 0.18;
+      if (everythingReady && elapsed >= minimum) value += (100 - value) * 0.18;
       setProgress(Math.min(99, Math.floor(value)));
-      if (resourcesReady && elapsed >= minimum && value > 98.7) finish();
+      if (everythingReady && elapsed >= minimum && value > 97.8) finish();
       else raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    const failsafe = window.setTimeout(() => { resourcesReady = true; }, 4200);
+    const failsafe = window.setTimeout(() => {
+      resourcesReady = true;
+      modelReadyRef.current = true;
+      finish();
+    }, 3200);
 
     return () => {
       live = false;
@@ -157,9 +168,8 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
           <div className="loader-showcase grid items-center gap-5 sm:grid-cols-[minmax(15rem,1fr)_auto]">
             <div data-loader-piece className="loader-model-stage relative mx-auto w-full max-w-[30rem]">
               <span className="loader-model-halo absolute inset-[12%] rounded-full" aria-hidden="true" />
-              {/* eslint-disable-next-line @next/next/no-img-element -- original local SVG extrusion asset */}
-              <img src="/assets/loader-h-3d.svg" alt="" className="loader-model relative z-[2] w-full" />
-              <span className="loader-depth-label absolute bottom-[12%] left-[3%] z-[3] whitespace-nowrap rounded-full border-2 border-ink bg-cyan px-3 py-2 font-mono text-[9px] font-black tracking-[.14em] text-ink shadow-[3px_4px_0_var(--color-ink)]">SVG → DEPTH → MOTION</span>
+              <LoaderModel3D reduced={reduced} onReady={markModelReady} />
+              <span className="loader-depth-label absolute bottom-[8%] left-[3%] z-[3] whitespace-nowrap rounded-full border-2 border-ink bg-cyan px-3 py-2 font-mono text-[9px] font-black tracking-[.14em] text-ink shadow-[3px_4px_0_var(--color-ink)]">CUSTOM GLB → REAL-TIME 3D</span>
             </div>
             <div data-loader-piece className="text-right">
               <p className="mb-2 font-mono text-[9px] font-bold tracking-[.22em] text-on-surface-variant">WORLD LOAD</p>

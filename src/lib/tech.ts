@@ -5,7 +5,14 @@ export type TechIcon = {
   label: string;
   hex: string;
   category: 'IT Support' | 'Technology';
+  url?: string;
 };
+
+const CUSTOM_IT_ICONS: TechIcon[] = [
+  { slug: 'it-pc', label: 'PC / Computer', hex: '42DCFF', category: 'IT Support', url: '/icons/it-pc.svg' },
+  { slug: 'it-monitor', label: 'Monitor / Display', hex: 'FFD84D', category: 'IT Support', url: '/icons/it-monitor.svg' },
+  { slug: 'it-maintenance', label: 'System Maintenance', hex: 'FF5CBB', category: 'IT Support', url: '/icons/it-maintenance.svg' },
+];
 
 const IT_SUPPORT_SLUGS = new Set([
   'android', 'anydesk', 'apple', 'arduino', 'cisco', 'cloudflare', 'datadog', 'debian',
@@ -19,16 +26,23 @@ const IT_SUPPORT_SEARCH: Record<string, string[]> = {
   network: ['cisco', 'ubiquiti', 'mikrotik', 'wireshark', 'pfsense', 'opnsense', 'openwrt', 'cloudflare', 'tailscale', 'wireguard', 'openvpn'],
   jaringan: ['cisco', 'ubiquiti', 'mikrotik', 'wireshark', 'pfsense', 'opnsense', 'openwrt'],
   remote: ['anydesk', 'teamviewer', 'rustdesk', 'splashtop'],
-  support: ['anydesk', 'teamviewer', 'rustdesk', 'windows11', 'linux', 'zabbix', 'wireshark'],
+  support: ['it-pc', 'it-monitor', 'it-maintenance', 'anydesk', 'teamviewer', 'rustdesk', 'windows11', 'linux', 'zabbix', 'wireshark'],
   helpdesk: ['zendesk', 'freshworks', 'jira', 'anydesk', 'teamviewer'],
   server: ['linux', 'ubuntu', 'debian', 'proxmox', 'vmware', 'virtualbox', 'docker', 'nginx', 'apache'],
   monitoring: ['zabbix', 'grafana', 'prometheus', 'datadog', 'elastic'],
-  hardware: ['dell', 'hp', 'lenovo', 'intel', 'amd', 'nvidia', 'raspberrypi', 'arduino'],
+  hardware: ['it-pc', 'it-monitor', 'it-maintenance', 'dell', 'hp', 'lenovo', 'intel', 'amd', 'nvidia', 'raspberrypi', 'arduino'],
+  pc: ['it-pc', 'it-monitor', 'it-maintenance', 'windows11', 'linux'],
+  komputer: ['it-pc', 'it-monitor', 'it-maintenance', 'windows11', 'linux'],
+  monitor: ['it-monitor', 'it-pc'],
+  display: ['it-monitor'],
+  maintenance: ['it-maintenance', 'it-pc', 'zabbix'],
+  perawatan: ['it-maintenance', 'it-pc', 'zabbix'],
   security: ['cloudflare', 'pfsense', 'opnsense', 'openvpn', 'wireguard', 'tailscale'],
   cloud: ['amazonwebservices', 'googlecloud', 'microsoftazure', 'cloudflare', 'digitalocean'],
 };
 
 const POPULAR_SLUGS = [
+  'it-pc', 'it-monitor', 'it-maintenance',
   'nextdotjs', 'react', 'typescript', 'javascript', 'nodedotjs', 'python', 'go', 'rust', 'php',
   'cplusplus', 'dotnet', 'java', 'kotlin', 'swift', 'dart', 'flutter', 'tailwindcss', 'html5',
   'css', 'svelte', 'angular', 'vuedotjs', 'nuxt', 'astro', 'redux', 'docker', 'kubernetes',
@@ -37,12 +51,15 @@ const POPULAR_SLUGS = [
   'googlecloud', 'cloudflare', 'cisco', 'ubiquiti', 'mikrotik', 'wireshark', 'proxmox', 'zabbix',
 ];
 
-const ALL_TECH_ICONS: TechIcon[] = iconData.map((icon) => ({
-  slug: icon.slug,
-  label: icon.title,
-  hex: icon.hex,
-  category: IT_SUPPORT_SLUGS.has(icon.slug) ? 'IT Support' : 'Technology',
-}));
+const ALL_TECH_ICONS: TechIcon[] = [
+  ...CUSTOM_IT_ICONS,
+  ...iconData.map((icon) => ({
+    slug: icon.slug,
+    label: icon.title,
+    hex: icon.hex,
+    category: IT_SUPPORT_SLUGS.has(icon.slug) ? 'IT Support' as const : 'Technology' as const,
+  })),
+];
 
 const ICON_BY_SLUG = new Map(ALL_TECH_ICONS.map((icon) => [icon.slug, icon]));
 
@@ -74,6 +91,7 @@ export function searchTechIcons(query: string, limit = 80) {
       const slug = icon.slug.toLowerCase();
       let score = 0;
       if (title === normalized || slug === normalized) score = 100;
+      else if (slug === `it-${normalized}`) score = 98;
       else if (title.startsWith(normalized) || slug.startsWith(normalized)) score = 70;
       else if (title.includes(normalized) || slug.includes(normalized)) score = 40;
       if (relatedSlugs.has(icon.slug)) score = Math.max(score, 85);
@@ -87,6 +105,8 @@ export function searchTechIcons(query: string, limit = 80) {
 }
 
 export function iconUrl(slug: string) {
+  const customUrl = ICON_BY_SLUG.get(slug)?.url;
+  if (customUrl) return customUrl;
   return `https://cdn.simpleicons.org/${encodeURIComponent(slug)}`;
 }
 
