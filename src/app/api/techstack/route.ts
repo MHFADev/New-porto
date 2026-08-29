@@ -1,5 +1,5 @@
 import { readMeta } from '@/lib/images';
-import { iconUrl, techIcon } from '@/lib/tech';
+import { publicTechIcon, techIcon } from '@/lib/tech';
 
 export async function GET() {
   try {
@@ -7,7 +7,7 @@ export async function GET() {
     const icons = meta.techStack
       .map((slug) => techIcon(slug))
       .filter((i): i is NonNullable<typeof i> => !!i)
-      .map((i) => ({ slug: i.slug, label: i.label, url: iconUrl(i.slug) }));
+      .map(publicTechIcon);
     return Response.json(icons);
   } catch {
     return Response.json({ error: 'tech stack error' }, { status: 502 });

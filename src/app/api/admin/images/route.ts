@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
       url: imageUrl(projectPath(), result.fileName),
       title: '',
       desc: '',
+      techStack: [],
     },
   });
 }

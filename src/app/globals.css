@@ -86,6 +86,10 @@ body {
   mask-image: radial-gradient(circle at 50% 50%, #000 15%, transparent 78%);
 }
 .loader-center { perspective: 900px; }
+.loader-model-stage { aspect-ratio: 1.34; perspective: 1000px; transform-style: preserve-3d; }
+.loader-model { transform: rotateX(10deg) rotateY(-17deg) rotateZ(-4deg); transform-style: preserve-3d; filter: drop-shadow(0 1.7rem 2.3rem color-mix(in srgb, #05040f 72%, transparent)); animation: loader-model-float 3.4s cubic-bezier(.45,.05,.55,.95) infinite; }
+.loader-model-halo { background: radial-gradient(circle, color-mix(in srgb, var(--color-cyan) 27%, transparent), color-mix(in srgb, var(--color-pink) 9%, transparent) 45%, transparent 72%); filter: blur(18px); animation: loader-halo-pulse 2.4s ease-in-out infinite; }
+.loader-depth-label { animation: loader-label-float 2.8s ease-in-out infinite; }
 .loader-orbit { position: absolute; width: min(58vw, 44rem); aspect-ratio: 1; left: 50%; top: 50%; border: 2px solid color-mix(in srgb, var(--color-cyan) 32%, transparent); border-radius: 50%; animation: loader-spin 11s linear infinite; }
 .loader-orbit::before,
 .loader-orbit::after { content: ""; position: absolute; width: 1rem; height: 1rem; border: 2px solid var(--color-ink); border-radius: 50%; background: var(--color-pink); box-shadow: 3px 4px 0 var(--color-ink); }
@@ -100,6 +104,9 @@ body {
 .image-skeleton::after { content: ""; position: absolute; inset: 0; translate: -120% 0; background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--color-cyan) 22%, transparent) 48%, color-mix(in srgb, var(--color-pink) 20%, transparent) 55%, transparent 80%); animation: skeleton-sweep 1.35s ease-in-out infinite; }
 
 @keyframes loader-spin { to { rotate: 360deg; } }
+@keyframes loader-model-float { 0%, 100% { transform: rotateX(10deg) rotateY(-17deg) rotateZ(-4deg) translate3d(0, 0, 0); } 50% { transform: rotateX(-3deg) rotateY(18deg) rotateZ(2deg) translate3d(0, -1rem, 2.5rem); } }
+@keyframes loader-halo-pulse { 50% { scale: 1.14; opacity: .72; } }
+@keyframes loader-label-float { 50% { translate: .45rem -.45rem; rotate: -2deg; } }
 @keyframes image-arrive { from { opacity: 0; scale: 1.06; filter: blur(10px) saturate(.7); } to { opacity: 1; scale: 1; filter: blur(0) saturate(1); } }
 @keyframes skeleton-sweep { to { translate: 120% 0; } }
 
@@ -158,6 +165,10 @@ body {
 .project-backdrop-2 { transform: rotate(-2.5deg); background: var(--color-cyan); }
 .project-backdrop-3 { background: var(--color-yellow); }
 .project-number { display: inline-flex; align-items: center; justify-content: center; width: 2.7rem; height: 2.2rem; border: 2px solid var(--color-ink); border-radius: .65rem; background: var(--color-yellow); color: var(--color-ink); box-shadow: 3px 3px 0 var(--color-ink); transform: rotate(-5deg); }
+.project-tech-chip { transition: transform .22s ease, box-shadow .22s ease; }
+.project-tech-chip:nth-child(3n + 2) { background: var(--color-cyan); transform: rotate(1deg); }
+.project-tech-chip:nth-child(3n + 3) { background: var(--color-lime); transform: rotate(-1deg); }
+.project-tech-chip:hover { transform: translateY(-3px) rotate(-1deg); box-shadow: 5px 6px 0 var(--color-ink); }
 .project-row:nth-child(2) .project-number { background: var(--color-cyan); }
 .project-row:nth-child(3) .project-number { background: var(--color-pink); }
 .project-fallback { background: var(--color-cyan); }

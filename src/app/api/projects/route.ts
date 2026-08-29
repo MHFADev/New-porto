@@ -1,4 +1,5 @@
 import { githubFetch, imageRepoConfig, projectPath, readMeta } from '@/lib/images';
+import { publicTechIcon, techIcon } from '@/lib/tech';
 
 const IMAGE_EXT = /\.(jpe?g|png|webp|avif|gif)$/i;
 
@@ -31,6 +32,10 @@ export async function GET() {
         url: `/api/images/${encodeURIComponent(projectPath())}/${encodeURIComponent(f.name)}`,
         title: meta.projects[f.name]?.title ?? '',
         desc: meta.projects[f.name]?.desc ?? '',
+        techStack: (meta.projects[f.name]?.techStack ?? [])
+          .map((slug) => techIcon(slug))
+          .filter((icon): icon is NonNullable<typeof icon> => Boolean(icon))
+          .map(publicTechIcon),
       }));
     return Response.json(projects);
   } catch {

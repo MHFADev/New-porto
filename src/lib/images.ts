@@ -1,9 +1,13 @@
+import { DEFAULT_PROFILE, normalizeProfile } from '@/lib/profile';
+import type { Profile } from '@/lib/profile';
+
 const GH_API = 'https://api.github.com/repos';
 
-export type ProjectMeta = { title?: string; desc?: string };
+export type ProjectMeta = { title?: string; desc?: string; techStack?: string[] };
 export type Meta = {
   projects: Record<string, ProjectMeta>;
   techStack: string[];
+  profile: Profile;
 };
 
 export type RepoConfig = { owner: string; repo: string; pat: string };
@@ -42,14 +46,15 @@ export async function githubFetch(cfg: RepoConfig, path: string, accept: 'raw' |
 
 export async function readMeta(): Promise<Meta> {
   const cfg = imageRepoConfig();
-  if (!cfg) return { projects: {}, techStack: [] };
+  if (!cfg) return { projects: {}, techStack: [], profile: DEFAULT_PROFILE };
   const res = await githubFetch(cfg, `${projectPath()}/meta.json`, 'json');
-  if (!res.ok) return { projects: {}, techStack: [] };
+  if (!res.ok) return { projects: {}, techStack: [], profile: DEFAULT_PROFILE };
   const data = (await res.json()) as { content: string };
   const parsed = JSON.parse(Buffer.from(data.content, 'base64').toString('utf8')) as Partial<Meta>;
   return {
     projects: parsed.projects ?? {},
     techStack: Array.isArray(parsed.techStack) ? parsed.techStack : [],
+    profile: normalizeProfile(parsed.profile),
   };
 }
 

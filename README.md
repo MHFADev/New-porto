@@ -13,7 +13,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Content setup
 
-Copy `.env.example` to `.env.local` and configure the image repository variables to load live project images and tech-stack data. The fine-grained GitHub token needs repository Contents read/write access so authenticated admins can upload images from `/admin`. Without these variables, the public portfolio uses polished local fallback case studies.
+Copy `.env.example` to `.env.local` and configure the image repository variables to load live project images, profile details, and tech-stack data. The fine-grained GitHub token needs repository Contents read/write access so authenticated admins can upload images and save content from `/admin`. The dashboard writes profile data, global technologies, project descriptions, and project-specific tech stacks to `<IMAGE_PROJECT_PATH>/meta.json`. Without these variables, the public portfolio uses polished local fallback content.
 
 ## Quality checks
 

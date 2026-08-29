@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { CSSProperties, ReactNode, SVGProps } from 'react';
 import { animate, onScroll, stagger } from 'animejs';
 import type { JSAnimation, ScrollObserver } from 'animejs';
+import { DEFAULT_PROFILE } from '@/lib/profile';
+import type { Profile } from '@/lib/profile';
 
 const NAV = [
   { label: 'About', href: '#about' },
@@ -12,8 +14,6 @@ const NAV = [
   { label: 'Journey', href: '#story' },
   { label: 'Contact', href: '#contact' },
 ];
-
-const ROLES = ['IT Support Specialist', 'Full-Stack Developer', 'Systems Administrator'];
 
 const MARQUEE_ITEMS = [
   'IT Support',
@@ -46,25 +46,11 @@ const SKILLS = [
   },
 ];
 
-const FACTS = [
-  { label: 'Name', value: 'M. Hilmi Firjatullah Adi' },
-  { label: 'Role', value: 'IT Support & Full-Stack Developer' },
-  { label: 'Location', value: 'Kendari, Indonesia' },
-  { label: 'Focus', value: 'Infrastructure · Cloud · Web' },
-  { label: 'Status', value: 'Open to work', accent: true },
-];
-
 const STATS = [
   { to: 6, suffix: '+', label: 'Years in IT' },
   { to: 2, suffix: '+', label: 'Projects shipped' },
   { to: 14, suffix: '+', label: 'Technologies' },
   { to: 24, suffix: '/7', label: 'Support uptime' },
-];
-
-const SOCIALS = [
-  { label: 'GitHub', href: 'https://github.com/MHFADev', icon: <GitHubIcon className="w-4 h-4" /> },
-  { label: 'LinkedIn', href: 'https://linkedin.com/in/mhilmifa', icon: <LinkedInIcon className="w-4 h-4" /> },
-  { label: 'Email', href: 'mailto:hello@hilmi.my.id', icon: <MailIcon className="w-4 h-4" /> },
 ];
 
 function useReducedMotion() {
@@ -79,7 +65,7 @@ function useReducedMotion() {
   );
 }
 
-function CinematicLoader({ reduced, onComplete }: { reduced: boolean; onComplete: () => void }) {
+function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; profile: Profile; onComplete: () => void }) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
 
@@ -164,13 +150,21 @@ function CinematicLoader({ reduced, onComplete }: { reduced: boolean; onComplete
       <div className="loader-orbit loader-orbit-b" aria-hidden="true" />
       <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-10">
         <div data-loader-piece className="flex items-center justify-between font-mono text-[10px] font-bold tracking-[.22em] text-on-surface-variant">
-          <span>HILMI / PORTFOLIO</span><span>KENDARI · ID</span>
+          <span>{profile.shortName.toUpperCase()} / PORTFOLIO</span><span>{profile.locationShort.toUpperCase()}</span>
         </div>
         <div className="loader-center mx-auto w-full max-w-6xl">
           <p data-loader-piece className="mb-4 font-mono text-[10px] font-bold tracking-[.26em] text-cyan sm:text-xs">INITIALIZING DIGITAL WORLD</p>
-          <div className="flex items-end justify-between gap-4">
-            <div data-loader-piece className="font-display text-[clamp(5rem,19vw,17rem)] font-black leading-[.75] tracking-[-.075em]">H<span className="text-pink">.</span></div>
-            <div data-loader-piece className="font-display text-[clamp(3rem,11vw,9rem)] font-black leading-none tracking-[-.07em] tabular-nums">{String(progress).padStart(2, '0')}<span className="text-[.32em] text-yellow">%</span></div>
+          <div className="loader-showcase grid items-center gap-5 sm:grid-cols-[minmax(15rem,1fr)_auto]">
+            <div data-loader-piece className="loader-model-stage relative mx-auto w-full max-w-[30rem]">
+              <span className="loader-model-halo absolute inset-[12%] rounded-full" aria-hidden="true" />
+              {/* eslint-disable-next-line @next/next/no-img-element -- original local SVG extrusion asset */}
+              <img src="/assets/loader-h-3d.svg" alt="" className="loader-model relative z-[2] w-full" />
+              <span className="loader-depth-label absolute bottom-[12%] left-[3%] z-[3] whitespace-nowrap rounded-full border-2 border-ink bg-cyan px-3 py-2 font-mono text-[9px] font-black tracking-[.14em] text-ink shadow-[3px_4px_0_var(--color-ink)]">SVG → DEPTH → MOTION</span>
+            </div>
+            <div data-loader-piece className="text-right">
+              <p className="mb-2 font-mono text-[9px] font-bold tracking-[.22em] text-on-surface-variant">WORLD LOAD</p>
+              <div className="font-display text-[clamp(3.8rem,11vw,9rem)] font-black leading-none tracking-[-.07em] tabular-nums">{String(progress).padStart(2, '0')}<span className="text-[.32em] text-yellow">%</span></div>
+            </div>
           </div>
           <div data-loader-piece className="mt-7 h-2 overflow-hidden rounded-full border-2 border-ink bg-cotton shadow-[4px_5px_0_var(--color-ink)]">
             <div className="h-full origin-left bg-lime transition-transform duration-100" style={{ transform: `scaleX(${progress / 100})` }} />
@@ -1099,7 +1093,7 @@ function Navbar({ theme, onToggle }: { theme: string; onToggle: () => void }) {
   );
 }
 
-function GlobeScene({ reduced }: { reduced: boolean }) {
+function GlobeScene({ reduced, location }: { reduced: boolean; location: string }) {
   const sceneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1131,7 +1125,7 @@ function GlobeScene({ reduced }: { reduced: boolean }) {
         {/* eslint-disable-next-line @next/next/no-img-element -- generated transparent portfolio artwork */}
         <img src="/assets/hilmi-orbit-world.png" alt="" className="globe-asset" />
       </div>
-      <div className="globe-pin pin-kendari" aria-hidden="true"><span /> Kendari, ID</div>
+      <div className="globe-pin pin-kendari" aria-hidden="true"><span /> {location}</div>
       <div className="globe-sticker sticker-code" aria-hidden="true">&lt;/&gt;</div>
       <div className="globe-sticker sticker-spark" aria-hidden="true">✦</div>
       <div className="globe-sticker sticker-cloud" aria-hidden="true">24/7</div>
@@ -1144,7 +1138,7 @@ function GlobeScene({ reduced }: { reduced: boolean }) {
   );
 }
 
-function Hero({ reduced, ready }: { reduced: boolean; ready: boolean }) {
+function Hero({ reduced, ready, profile }: { reduced: boolean; ready: boolean; profile: Profile }) {
   const heroRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -1248,12 +1242,12 @@ function Hero({ reduced, ready }: { reduced: boolean; ready: boolean }) {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-active" />
             </span>
             <span className="text-xs font-bold tracking-wide">
-              AVAILABLE FOR COOL PROJECTS
+              {profile.status.toUpperCase()}
             </span>
           </div>
 
           <p data-hero style={{ opacity: 0 }} className="font-mono text-xs sm:text-sm font-bold tracking-[0.24em] text-cyan mb-5 uppercase">
-            M. Hilmi Firjatullah Adi · Kendari, ID
+            {profile.name} · {profile.locationShort}
           </p>
 
           <h1 className="font-display font-black tracking-[-0.055em] leading-[0.92] text-[clamp(3.7rem,9.2vw,7.5rem)] text-cotton mb-7 max-w-4xl">
@@ -1269,11 +1263,11 @@ function Hero({ reduced, ready }: { reduced: boolean; ready: boolean }) {
           </h1>
 
           <p data-hero style={{ opacity: 0 }} className="font-display font-medium text-lg sm:text-xl text-on-surface-variant mb-5">
-            <RoleRotator roles={ROLES} />
+            <RoleRotator roles={profile.roles.length ? profile.roles : [profile.primaryRole]} />
           </p>
 
           <p data-hero style={{ opacity: 0 }} className="text-base sm:text-lg text-on-surface-variant/90 max-w-xl leading-relaxed mb-10">
-            I bridge infrastructure and code to build digital experiences that feel effortless, dependable, and a little more fun.
+            {profile.heroIntro}
           </p>
 
           <div data-hero style={{ opacity: 0 }} className="flex flex-wrap items-center gap-4 mb-12">
@@ -1304,7 +1298,7 @@ function Hero({ reduced, ready }: { reduced: boolean; ready: boolean }) {
         </div>
 
         <div data-hero style={{ opacity: 0 }} className="relative min-h-[27rem] sm:min-h-[34rem] lg:min-h-[40rem] flex items-center justify-center">
-          <GlobeScene reduced={reduced} />
+          <GlobeScene reduced={reduced} location={profile.locationShort} />
         </div>
       </div>
 
@@ -1320,7 +1314,14 @@ function Hero({ reduced, ready }: { reduced: boolean; ready: boolean }) {
   );
 }
 
-function About() {
+function About({ profile }: { profile: Profile }) {
+  const facts = [
+    { label: 'Name', value: profile.name },
+    { label: 'Role', value: profile.primaryRole },
+    { label: 'Location', value: profile.location },
+    { label: 'Focus', value: profile.focus },
+    { label: 'Status', value: profile.status },
+  ];
   return (
     <section id="about" className="relative mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-36 scroll-mt-16">
       <SectionHeading
@@ -1334,13 +1335,10 @@ function About() {
         <Reveal delay={120}>
           <div className="about-copy space-y-5 text-on-surface-variant/90 leading-relaxed text-base sm:text-lg">
             <p>
-              I&rsquo;m M. Hilmi Firjatullah Adi — an IT support specialist and full-stack developer. I keep systems
-              running, diagnose the tricky ones, and build the tools that make operations easier.
+              I&rsquo;m {profile.name} — {profile.primaryRole}. {profile.about}
             </p>
             <p>
-              Working across infrastructure and software, I turn messy, complex environments into stable,
-              well-documented ones. From network admin to shipping Next.js applications — the goal is always the
-              same: seamless, dependable results.
+              {profile.aboutSecondary}
             </p>
           </div>
 
@@ -1358,8 +1356,8 @@ function About() {
 
         <Reveal delay={240}>
           <dl className="fact-card border-[3px] border-ink rounded-[1.75rem] bg-yellow divide-y-[3px] divide-ink overflow-hidden text-ink">
-            {FACTS.map((f, index) => (
-              <div key={f.label} className={`flex items-center justify-between gap-6 px-6 py-4 ${index === FACTS.length - 1 ? 'bg-lime' : ''}`}>
+            {facts.map((f, index) => (
+              <div key={f.label} className={`flex items-center justify-between gap-6 px-6 py-4 ${index === facts.length - 1 ? 'bg-lime' : ''}`}>
                 <dt className="font-mono text-[10px] font-black tracking-[0.2em] text-ink/60 uppercase">
                   {f.label}
                 </dt>
@@ -1462,7 +1460,8 @@ function toTitle(name: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-type Project = { name: string; url: string; title: string; desc: string };
+type ProjectIcon = { slug: string; label: string; url: string; hex?: string; category?: string };
+type Project = { name: string; url: string; title: string; desc: string; techStack: ProjectIcon[] };
 
 const FALLBACK_PROJECTS: Project[] = [
   {
@@ -1470,18 +1469,33 @@ const FALLBACK_PROJECTS: Project[] = [
     url: '/projects/infrastructure-operations.webp',
     title: 'Infrastructure Operations',
     desc: 'Reliable network, hardware, and system support shaped around clear documentation and calm incident response.',
+    techStack: [
+      { slug: 'linux', label: 'Linux', url: 'https://cdn.simpleicons.org/linux' },
+      { slug: 'cisco', label: 'Cisco', url: 'https://cdn.simpleicons.org/cisco' },
+      { slug: 'wireshark', label: 'Wireshark', url: 'https://cdn.simpleicons.org/wireshark' },
+    ],
   },
   {
     name: 'support-automation.webp',
     url: '/projects/support-automation.webp',
     title: 'Support Automation',
     desc: 'Purpose-built tools that turn repetitive support work into fast, traceable, and human-friendly workflows.',
+    techStack: [
+      { slug: 'powershell', label: 'PowerShell', url: 'https://cdn.simpleicons.org/powershell' },
+      { slug: 'python', label: 'Python', url: 'https://cdn.simpleicons.org/python' },
+      { slug: 'windows11', label: 'Windows', url: 'https://cdn.simpleicons.org/windows11' },
+    ],
   },
   {
     name: 'full-stack-platforms.webp',
     url: '/projects/full-stack-platforms.webp',
     title: 'Full-Stack Platforms',
     desc: 'Polished web products built from interface to database with a focus on clarity, speed, and dependable delivery.',
+    techStack: [
+      { slug: 'nextdotjs', label: 'Next.js', url: 'https://cdn.simpleicons.org/nextdotjs/ffffff' },
+      { slug: 'typescript', label: 'TypeScript', url: 'https://cdn.simpleicons.org/typescript' },
+      { slug: 'postgresql', label: 'PostgreSQL', url: 'https://cdn.simpleicons.org/postgresql' },
+    ],
   },
 ];
 
@@ -1547,6 +1561,20 @@ function Projects() {
                 {p.desc && (
                   <p className="text-on-surface-variant/90 leading-relaxed mb-7 max-w-md text-base sm:text-lg">{p.desc}</p>
                 )}
+                {p.techStack?.length ? (
+                  <div className="flex flex-wrap gap-2" aria-label="Project technology stack">
+                    {p.techStack.slice(0, 8).map((icon) => (
+                      <span key={icon.slug} className="project-tech-chip inline-flex items-center gap-2 rounded-full border-2 border-ink bg-cotton px-3 py-2 text-xs font-black text-ink shadow-[3px_4px_0_var(--color-ink)]">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- official runtime icon CDN */}
+                        <img src={icon.url} alt="" className="h-4 w-4 object-contain" loading="lazy" />
+                        {icon.label}
+                      </span>
+                    ))}
+                    {p.techStack.length > 8 ? (
+                      <span className="inline-flex items-center rounded-full border-2 border-ink bg-yellow px-3 py-2 text-xs font-black text-ink shadow-[3px_4px_0_var(--color-ink)]">+{p.techStack.length - 8}</span>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </article>
           </Reveal>
@@ -1711,7 +1739,13 @@ function WorldScroll() {
   );
 }
 
-function Contact() {
+function Contact({ profile }: { profile: Profile }) {
+  const socials = [
+    { label: 'GitHub', href: profile.github, icon: <GitHubIcon className="w-4 h-4" /> },
+    { label: 'LinkedIn', href: profile.linkedin, icon: <LinkedInIcon className="w-4 h-4" /> },
+    { label: 'Email', href: profile.email ? `mailto:${profile.email}` : '', icon: <MailIcon className="w-4 h-4" /> },
+    { label: 'Phone', href: profile.phone ? `tel:${profile.phone.replace(/[^\d+]/g, '')}` : '', icon: <PhoneIcon className="w-4 h-4" /> },
+  ].filter((social) => Boolean(social.href));
   return (
     <section id="contact" className="relative border-t border-line-strong bg-surface-container/25 scroll-mt-16">
       <div className="mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-40">
@@ -1731,11 +1765,10 @@ function Contact() {
             />
             <div className="relative z-[3] max-w-xl">
               <p className="text-ink/80 font-medium text-lg leading-relaxed mb-8">
-                Open for freelance, contract, and full-time roles — remote or based in Kendari. If you have a system
-                to stabilize or a product to ship, I&rsquo;d love to hear about it.
+                {profile.availability}
               </p>
               <div className="flex flex-wrap gap-3">
-                {SOCIALS.map((s) => (
+                {socials.map((s) => (
                   <a
                     key={s.label}
                     href={s.href}
@@ -1760,7 +1793,7 @@ function Contact() {
               />
               <Magnetic strength={0.25}>
                 <a
-                  href="mailto:hello@hilmi.my.id"
+                  href={profile.email ? `mailto:${profile.email}` : '#contact'}
                   className="cartoon-button cartoon-button-primary group relative inline-flex items-center gap-3 rounded-full px-8 py-5 text-base font-black"
                 >
                   Start a conversation
@@ -1823,7 +1856,9 @@ function ScrollChrome() {
 export default function Portfolio() {
   const [theme, setTheme] = useState('dark');
   const [introReady, setIntroReady] = useState(false);
+  const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const reduced = useReducedMotion();
+  const completeIntro = useCallback(() => setIntroReady(true), []);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => {
@@ -1838,9 +1873,18 @@ export default function Portfolio() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    let live = true;
+    fetch('/api/profile')
+      .then((response) => response.ok ? response.json() : DEFAULT_PROFILE)
+      .then((data) => { if (live) setProfile(data as Profile); })
+      .catch(() => undefined);
+    return () => { live = false; };
+  }, []);
+
   return (
     <div className="min-h-screen text-on-surface relative">
-      {!introReady && <CinematicLoader reduced={reduced} onComplete={() => setIntroReady(true)} />}
+      {!introReady && <CinematicLoader reduced={reduced} profile={profile} onComplete={completeIntro} />}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
         <div
           className="ambient-orb ambient-orb-a absolute top-[-22%] right-[-12%] w-[58vw] h-[58vw] rounded-full"
@@ -1859,13 +1903,13 @@ export default function Portfolio() {
       <Navbar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
 
       <main className="relative z-10">
-        <Hero reduced={reduced} ready={introReady} />
+        <Hero reduced={reduced} ready={introReady} profile={profile} />
         <Marquee items={MARQUEE_ITEMS} />
-        <About />
+        <About profile={profile} />
         <Skills />
         <Projects />
         <WorldScroll />
-        <Contact />
+        <Contact profile={profile} />
       </main>
 
       <footer className="relative z-10 border-t border-line-strong">
@@ -1873,11 +1917,11 @@ export default function Portfolio() {
           <div className="flex items-center gap-3">
             <span className="w-3 h-3 rounded-full bg-lime border-2 border-ink" aria-hidden="true" />
             <span className="font-display font-semibold text-cotton">
-              hilmi<span className="text-primary-container">.</span>my.id
+              {profile.shortName}<span className="text-primary-container">.</span>
             </span>
           </div>
           <p className="font-mono text-[11px] text-on-surface-variant/60 text-center">
-            © 2026 M. Hilmi Firjatullah Adi — Built with Next.js & anime.js
+            © 2026 {profile.name} — Built with Next.js & anime.js
           </p>
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -2014,6 +2058,14 @@ function MailIcon({ className }: SVGProps<SVGSVGElement>) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="2" y="4" width="20" height="16" rx="3" />
       <path d="m22 8-10 6L2 8" />
+    </svg>
+  );
+}
+
+function PhoneIcon({ className }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.69 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.28-1.28a2 2 0 0 1 2.11-.45c.9.33 1.84.56 2.8.69A2 2 0 0 1 22 16.92Z" />
     </svg>
   );
 }
