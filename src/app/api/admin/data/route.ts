@@ -8,9 +8,17 @@ const IMAGE_EXT = /\.(jpe?g|png|webp|avif|gif|svg)$/i;
 
 async function projectsWithMeta() {
   const cfg = imageRepoConfig();
-  if (!cfg) throw new Error('not configured');
+  if (!cfg) {
+    throw new Error('GitHub storage belum dikonfigurasi. Isi IMAGE_REPO_URL dan IMAGE_REPO_PAT di Vercel.');
+  }
   const res = await githubFetch(cfg, projectPath(), 'json');
-  if (!res.ok) throw new Error('project dir not found');
+  // GitHub does not keep empty directories. Before the first upload the configured
+  // project path legitimately returns 404, so treat it as an empty collection.
+  if (res.status === 404) return [];
+  if (!res.ok) {
+    const detail = (await res.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(`GitHub ${res.status}: ${detail?.message ?? 'gagal membaca folder project'}`);
+  }
   const items = (await res.json()) as { name: string; type: string }[];
   const meta = await readMeta();
   return items
@@ -32,6 +40,7 @@ export async function GET(req: NextRequest) {
     const icons = TECH_ICONS.map((i) => ({ ...i, url: iconUrl(i.slug) }));
     return Response.json({ projects: await projectsWithMeta(), icons, techStack: meta.techStack });
   } catch (e) {
+    console.error('Failed to load admin project data:', e);
     return Response.json({ error: (e as Error).message }, { status: 500 });
   }
 }

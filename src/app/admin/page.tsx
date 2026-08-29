@@ -26,7 +26,8 @@ export default function AdminPage() {
       return;
     }
     if (!res.ok) {
-      setError('Failed to load projects');
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      setError(data.error ?? 'Failed to load projects');
       setState('auth');
       return;
     }

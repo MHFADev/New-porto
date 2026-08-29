@@ -10,8 +10,17 @@ export async function GET() {
 
   try {
     const res = await githubFetch(cfg, projectPath(), 'json');
+    // An empty GitHub directory does not exist yet. The first admin upload will
+    // create the configured path, so return an empty list instead of an error.
+    if (res.status === 404) {
+      return Response.json([]);
+    }
     if (!res.ok) {
-      return Response.json({ error: 'project dir not found' }, { status: res.status });
+      const detail = (await res.json().catch(() => null)) as { message?: string } | null;
+      return Response.json(
+        { error: detail?.message ?? 'project list error' },
+        { status: res.status },
+      );
     }
     const items = (await res.json()) as { name: string; type: string }[];
     const meta = await readMeta();
