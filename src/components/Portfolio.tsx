@@ -6,7 +6,6 @@ import { animate, onScroll, stagger } from 'animejs';
 import type { JSAnimation, ScrollObserver } from 'animejs';
 import { DEFAULT_PROFILE } from '@/lib/profile';
 import type { Profile } from '@/lib/profile';
-import LoaderModel3D from '@/components/LoaderModel3D';
 
 const NAV = [
   { label: 'About', href: '#about' },
@@ -68,9 +67,7 @@ function useReducedMotion() {
 
 function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; profile: Profile; onComplete: () => void }) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  const modelReadyRef = useRef(reduced);
   const [progress, setProgress] = useState(0);
-  const markModelReady = useCallback(() => { modelReadyRef.current = true; }, []);
 
   useEffect(() => {
     const overlay = overlayRef.current;
@@ -96,6 +93,15 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
       preload('/assets/hilmi-orbit-world.png'),
       preload('/assets/hilmi-workstation-island.png'),
     ]).finally(() => { resourcesReady = true; });
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (reduced) return;
+      overlay.style.setProperty('--loader-x', `${event.clientX}px`);
+      overlay.style.setProperty('--loader-y', `${event.clientY}px`);
+      overlay.style.setProperty('--loader-shift-x', `${((event.clientX / window.innerWidth) - 0.5) * 18}px`);
+      overlay.style.setProperty('--loader-shift-y', `${((event.clientY / window.innerHeight) - 0.5) * 18}px`);
+    };
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
 
     const finish = () => {
       if (!live || finishing) return;
@@ -130,7 +136,7 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
     const tick = (now: number) => {
       if (!live) return;
       const elapsed = now - started;
-      const everythingReady = resourcesReady && modelReadyRef.current;
+      const everythingReady = resourcesReady;
       const ceiling = everythingReady ? 100 : 92;
       const target = Math.min(ceiling, (elapsed / minimum) * 100);
       value += (target - value) * 0.085;
@@ -142,7 +148,6 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
     raf = requestAnimationFrame(tick);
     const failsafe = window.setTimeout(() => {
       resourcesReady = true;
-      modelReadyRef.current = true;
       finish();
     }, 3200);
 
@@ -150,6 +155,7 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
       live = false;
       cancelAnimationFrame(raf);
       clearTimeout(failsafe);
+      window.removeEventListener('pointermove', onPointerMove);
       document.body.style.overflow = previousOverflow;
     };
   }, [onComplete, reduced]);
@@ -157,23 +163,26 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
   return (
     <div ref={overlayRef} className="cinematic-loader fixed inset-0 z-[100] overflow-hidden bg-surface-dim text-cotton" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-label="Loading portfolio">
       <div className="loader-grid absolute inset-0" aria-hidden="true" />
-      <div className="loader-orbit loader-orbit-a" aria-hidden="true" />
-      <div className="loader-orbit loader-orbit-b" aria-hidden="true" />
+      <div className="loader-cursor-glow" aria-hidden="true" />
       <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-10">
         <div data-loader-piece className="flex items-center justify-between font-mono text-[10px] font-bold tracking-[.22em] text-on-surface-variant">
           <span>{profile.shortName.toUpperCase()} / PORTFOLIO</span><span>{profile.locationShort.toUpperCase()}</span>
         </div>
         <div className="loader-center mx-auto w-full max-w-6xl">
-          <p data-loader-piece className="mb-4 font-mono text-[10px] font-bold tracking-[.26em] text-cyan sm:text-xs">INITIALIZING DIGITAL WORLD</p>
-          <div className="loader-showcase grid items-center gap-5 sm:grid-cols-[minmax(15rem,1fr)_auto]">
-            <div data-loader-piece className="loader-model-stage relative mx-auto w-full max-w-[30rem]">
-              <span className="loader-model-halo absolute inset-[12%] rounded-full" aria-hidden="true" />
-              <LoaderModel3D reduced={reduced} onReady={markModelReady} />
-              <span className="loader-depth-label absolute bottom-[8%] left-[3%] z-[3] whitespace-nowrap rounded-full border-2 border-ink bg-cyan px-3 py-2 font-mono text-[9px] font-black tracking-[.14em] text-ink shadow-[3px_4px_0_var(--color-ink)]">CUSTOM GLB → REAL-TIME 3D</span>
-            </div>
-            <div data-loader-piece className="text-right">
-              <p className="mb-2 font-mono text-[9px] font-bold tracking-[.22em] text-on-surface-variant">WORLD LOAD</p>
-              <div className="font-display text-[clamp(3.8rem,11vw,9rem)] font-black leading-none tracking-[-.07em] tabular-nums">{String(progress).padStart(2, '0')}<span className="text-[.32em] text-yellow">%</span></div>
+          <p data-loader-piece className="mb-5 font-mono text-[10px] font-bold tracking-[.26em] text-cyan sm:text-xs">CRAFTING YOUR EXPERIENCE</p>
+          <div data-loader-piece className="loader-signal relative">
+            <div className="loader-signal-ring loader-signal-ring-a" aria-hidden="true" />
+            <div className="loader-signal-ring loader-signal-ring-b" aria-hidden="true" />
+            <div className="loader-monogram" aria-hidden="true"><span>M</span><i>H</i></div>
+            <span className="loader-chip loader-chip-a">DESIGN</span>
+            <span className="loader-chip loader-chip-b">CODE</span>
+            <span className="loader-chip loader-chip-c">SYSTEMS</span>
+          </div>
+          <div data-loader-piece className="mt-2 flex items-end justify-between gap-5">
+            <p className="max-w-xs font-mono text-[9px] font-bold leading-relaxed tracking-[.18em] text-on-surface-variant sm:text-[10px]">MOVE YOUR CURSOR<br />THE INTERFACE IS LISTENING</p>
+            <div className="text-right">
+              <p className="mb-1 font-mono text-[9px] font-bold tracking-[.22em] text-on-surface-variant">LOADING</p>
+              <div className="font-display text-[clamp(3.6rem,10vw,8rem)] font-black leading-[.72] tracking-[-.07em] tabular-nums">{String(progress).padStart(2, '0')}<span className="text-[.3em] text-yellow">%</span></div>
             </div>
           </div>
           <div data-loader-piece className="mt-7 h-2 overflow-hidden rounded-full border-2 border-ink bg-cotton shadow-[4px_5px_0_var(--color-ink)]">
@@ -181,7 +190,7 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
           </div>
         </div>
         <div data-loader-piece className="flex items-center justify-between font-mono text-[10px] font-bold tracking-[.16em] text-on-surface-variant">
-          <span>IT SUPPORT × FULL-STACK</span><span className="text-active">SYSTEMS ONLINE</span>
+          <span>IT SUPPORT × FULL-STACK</span><span className="flex items-center gap-2 text-active"><i className="loader-status-dot" /> SYSTEMS ONLINE</span>
         </div>
       </div>
     </div>
@@ -1476,7 +1485,7 @@ type Project = { name: string; url: string; title: string; desc: string; techSta
 const FALLBACK_PROJECTS: Project[] = [
   {
     name: 'infrastructure-operations.webp',
-    url: '/projects/infrastructure-operations.webp',
+    url: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.08.jpeg',
     title: 'Infrastructure Operations',
     desc: 'Reliable network, hardware, and system support shaped around clear documentation and calm incident response.',
     techStack: [
@@ -1487,7 +1496,7 @@ const FALLBACK_PROJECTS: Project[] = [
   },
   {
     name: 'support-automation.webp',
-    url: '/projects/support-automation.webp',
+    url: '/foto/IMG_20260709_130641.jpg',
     title: 'Support Automation',
     desc: 'Purpose-built tools that turn repetitive support work into fast, traceable, and human-friendly workflows.',
     techStack: [
@@ -1498,7 +1507,7 @@ const FALLBACK_PROJECTS: Project[] = [
   },
   {
     name: 'full-stack-platforms.webp',
-    url: '/projects/full-stack-platforms.webp',
+    url: '/foto/WhatsApp%20Image%202026-07-09%20at%2012.06.57.jpeg',
     title: 'Full-Stack Platforms',
     desc: 'Polished web products built from interface to database with a focus on clarity, speed, and dependable delivery.',
     techStack: [
