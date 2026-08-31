@@ -1,6 +1,6 @@
 # M. Hilmi F.A. — Portfolio
 
-A colorful, motion-led portfolio for an IT Support specialist and Full-Stack Developer. The experience combines oversized editorial typography, original 3D artwork, responsive horizontal world-scroll storytelling, interactive tilt effects, and accessible reduced-motion fallbacks.
+A colorful, motion-led portfolio for an IT Support specialist and Full-Stack Developer. The experience combines oversized editorial typography, a cursor-reactive loading sequence, responsive horizontal world-scroll storytelling, interactive tilt effects, and accessible reduced-motion fallbacks.
 
 ## Run locally
 
