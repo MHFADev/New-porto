@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { imageUrl, projectPath, uploadProjectImage } from '@/lib/images';
+import { deleteProjectImage, imageUrl, projectPath, uploadProjectImage } from '@/lib/images';
 import { isAuthed, readCookie } from '@/lib/auth';
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
@@ -58,4 +58,17 @@ export async function POST(req: NextRequest) {
       techStack: [],
     },
   });
+}
+
+export async function DELETE(req: NextRequest) {
+  if (!isAuthed(readCookie(req))) {
+    return Response.json({ error: 'unauthorized' }, { status: 401 });
+  }
+  const fileName = req.nextUrl.searchParams.get('name') ?? '';
+  const result = await deleteProjectImage(fileName);
+  if (!result.ok) {
+    const status = result.error.includes('not set') ? 503 : result.error.includes('tidak ditemukan') ? 404 : 502;
+    return Response.json({ error: result.error }, { status });
+  }
+  return Response.json({ ok: true });
 }

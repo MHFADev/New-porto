@@ -120,6 +120,34 @@ export async function uploadProjectImage(name: string, bytes: Uint8Array) {
   return { ok: true as const, fileName, path };
 }
 
+export async function deleteProjectImage(fileName: string) {
+  const cfg = imageRepoConfig();
+  if (!cfg) return { ok: false as const, error: 'IMAGE_REPO_URL / IMAGE_REPO_PAT not set' };
+  if (!/^[a-z0-9][a-z0-9._-]*\.(?:jpe?g|png|webp|avif|gif)$/i.test(fileName) || fileName.includes('..')) {
+    return { ok: false as const, error: 'Nama file gambar tidak valid.' };
+  }
+  const url = contentUrl(cfg, `${projectPath()}/${fileName}`);
+  const existing = await fetch(url, {
+    headers: headers(cfg, 'application/vnd.github+json'),
+    cache: 'no-store',
+  });
+  if (existing.status === 404) return { ok: false as const, error: 'Gambar tidak ditemukan.' };
+  if (!existing.ok) return { ok: false as const, error: `GitHub ${existing.status}: gagal membaca gambar.` };
+  const { sha } = (await existing.json()) as { sha?: string };
+  if (!sha) return { ok: false as const, error: 'GitHub tidak mengembalikan identitas gambar.' };
+  const removed = await fetch(url, {
+    method: 'DELETE',
+    headers: headers(cfg, 'application/vnd.github+json'),
+    body: JSON.stringify({ message: `Delete portfolio project image: ${fileName}`, sha }),
+    cache: 'no-store',
+  });
+  if (!removed.ok) {
+    const err = (await removed.json().catch(() => null)) as { message?: string } | null;
+    return { ok: false as const, error: err?.message || `GitHub ${removed.status}` };
+  }
+  return { ok: true as const };
+}
+
 export function imageUrl(...segments: string[]) {
   return `/api/images/${segments.map(encodeURIComponent).join('/')}`;
 }

@@ -22,6 +22,7 @@ export default function AdminPage() {
   const [notice, setNotice] = useState('');
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [deleting, setDeleting] = useState('');
   const [uploading, setUploading] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<PickerTarget | null>(null);
@@ -156,6 +157,29 @@ export default function AdminPage() {
       setProjects((previous) => [...added, ...previous]);
       setDirty(true);
       setNotice(`${added.length} gambar berhasil diunggah. Lengkapi detail dan tech stack, lalu simpan.`);
+    }
+  }
+
+  async function deleteProject(project: Project) {
+    const label = project.title || project.name;
+    if (!window.confirm(`Hapus project “${label}” beserta file gambarnya secara permanen?`)) return;
+    setDeleting(project.name);
+    setError('');
+    setNotice('');
+    try {
+      const res = await fetch(`/api/admin/images?name=${encodeURIComponent(project.name)}`, { method: 'DELETE' });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(data.error ?? 'Gagal menghapus project.');
+        return;
+      }
+      setProjects((previous) => previous.filter((item) => item.name !== project.name));
+      setDirty(true);
+      setNotice('Gambar terhapus. Tekan “Simpan semua perubahan” untuk menghapus metadata project juga.');
+    } catch {
+      setError('Koneksi gagal saat menghapus project.');
+    } finally {
+      setDeleting('');
     }
   }
 
@@ -294,6 +318,8 @@ export default function AdminPage() {
                   iconMap={iconMap}
                   onChange={(update) => updateProject(project.name, update)}
                   onPickIcons={() => openPicker({ kind: 'project', name: project.name })}
+                  onDelete={() => void deleteProject(project)}
+                  deleting={deleting === project.name}
                 />
               ))}
             </div>
@@ -396,7 +422,7 @@ function profileCompletion(profile: Profile) {
   return Math.round((values.filter((value) => Boolean(value.trim())).length / values.length) * 100);
 }
 
-function ProjectEditor({ index, project, iconMap, onChange, onPickIcons }: { index: number; project: Project; iconMap: Map<string, Icon>; onChange: (update: Partial<Project>) => void; onPickIcons: () => void }) {
+function ProjectEditor({ index, project, iconMap, onChange, onPickIcons, onDelete, deleting }: { index: number; project: Project; iconMap: Map<string, Icon>; onChange: (update: Partial<Project>) => void; onPickIcons: () => void; onDelete: () => void; deleting: boolean }) {
   return (
     <article className="overflow-hidden rounded-[1.75rem] border border-line-strong bg-surface-container/75 shadow-[0_18px_55px_rgba(0,0,0,.14)]">
       <div className="grid lg:grid-cols-[19rem_1fr]">
@@ -431,6 +457,12 @@ function ProjectEditor({ index, project, iconMap, onChange, onPickIcons }: { ind
               empty="Belum memilih tech stack."
               onRemove={(slug) => onChange({ techStack: project.techStack.filter((item) => item !== slug) })}
             />
+          </div>
+          <div className="flex flex-col gap-3 border-t border-line-strong pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-on-surface-variant">File gambar dihapus permanen dari GitHub storage.</p>
+            <button type="button" onClick={onDelete} disabled={deleting} className="rounded-full border border-pink/50 px-5 py-2.5 text-sm font-bold text-pink transition-colors hover:bg-pink/10 disabled:cursor-wait disabled:opacity-50">
+              {deleting ? 'Menghapus…' : 'Hapus project dan gambar'}
+            </button>
           </div>
         </div>
       </div>
