@@ -16,6 +16,8 @@ export type Profile = {
   github: string;
   linkedin: string;
   website: string;
+  cvFileName: string;
+  extraLinks: { label: string; url: string }[];
 };
 
 export const DEFAULT_PROFILE: Profile = {
@@ -36,6 +38,8 @@ export const DEFAULT_PROFILE: Profile = {
   github: 'https://github.com/MHFADev',
   linkedin: 'https://linkedin.com/in/mhilmifa',
   website: 'https://hilmi.my.id',
+  cvFileName: '',
+  extraLinks: [],
 };
 
 export function normalizeProfile(value: unknown): Profile {
@@ -60,5 +64,12 @@ export function normalizeProfile(value: unknown): Profile {
     github: text('github'),
     linkedin: text('linkedin'),
     website: text('website'),
+    cvFileName: text('cvFileName'),
+    extraLinks: Array.isArray(input.extraLinks)
+      ? input.extraLinks
+          .filter((link): link is { label: string; url: string } => Boolean(link && typeof link === 'object' && typeof link.label === 'string' && typeof link.url === 'string'))
+          .map((link) => ({ label: link.label.slice(0, 40), url: link.url.slice(0, 500) }))
+          .slice(0, 12)
+      : [],
   };
 }

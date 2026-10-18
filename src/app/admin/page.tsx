@@ -24,6 +24,7 @@ export default function AdminPage() {
   const [dirty, setDirty] = useState(false);
   const [deleting, setDeleting] = useState('');
   const [uploading, setUploading] = useState('');
+  const [cvUploading, setCvUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<PickerTarget | null>(null);
   const [iconQuery, setIconQuery] = useState('');
@@ -183,6 +184,57 @@ export default function AdminPage() {
     }
   }
 
+  async function uploadCv(file: File) {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setError('File CV harus berformat PDF.');
+      return;
+    }
+    if (!file.size || file.size > 10 * 1024 * 1024) {
+      setError('Ukuran CV maksimal 10 MB.');
+      return;
+    }
+    setCvUploading(true);
+    setError('');
+    setNotice('');
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/admin/cv', { method: 'POST', body: form });
+      const data = (await res.json().catch(() => ({}))) as { fileName?: string; error?: string };
+      if (!res.ok || !data.fileName) {
+        setError(data.error ?? 'Gagal mengunggah CV.');
+        return;
+      }
+      updateProfile({ cvFileName: data.fileName });
+      setNotice('CV terunggah. Simpan semua perubahan untuk menampilkan tombol download di website.');
+    } catch {
+      setError('Koneksi gagal saat mengunggah CV.');
+    } finally {
+      setCvUploading(false);
+    }
+  }
+
+  async function deleteCv() {
+    if (!window.confirm('Hapus file CV dari storage?')) return;
+    setCvUploading(true);
+    setError('');
+    setNotice('');
+    try {
+      const res = await fetch('/api/admin/cv', { method: 'DELETE' });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(data.error ?? 'Gagal menghapus CV.');
+        return;
+      }
+      updateProfile({ cvFileName: '' });
+      setNotice('CV terhapus. Simpan semua perubahan untuk menghapus tombol download dari website.');
+    } catch {
+      setError('Koneksi gagal saat menghapus CV.');
+    } finally {
+      setCvUploading(false);
+    }
+  }
+
   function updateProject(name: string, update: Partial<Project>) {
     setProjects((previous) => previous.map((project) => project.name === name ? { ...project, ...update } : project));
     setDirty(true);
@@ -267,7 +319,14 @@ export default function AdminPage() {
 
         <section className="mb-8 rounded-[1.75rem] border border-line-strong bg-surface-container/70 p-5 sm:p-7">
           <SectionTitle index="01" title="Data diri" description="Konten utama portfolio. Semua field disimpan ke meta.json di repository GitHub." />
-          <ProfileEditor profile={profile} onChange={updateProfile} />
+          <ProfileEditor
+            profile={profile}
+            onChange={updateProfile}
+            onCvUpload={uploadCv}
+            onCvDelete={deleteCv}
+            cvUploading={cvUploading}
+            storageConfigured={storageConfigured}
+          />
         </section>
 
         <section className="mb-8 rounded-[1.75rem] border border-line-strong bg-surface-container/70 p-5 sm:p-7">
@@ -354,7 +413,7 @@ export default function AdminPage() {
   );
 }
 
-function ProfileEditor({ profile, onChange }: { profile: Profile; onChange: (update: Partial<Profile>) => void }) {
+function ProfileEditor({ profile, onChange, onCvUpload, onCvDelete, cvUploading, storageConfigured }: { profile: Profile; onChange: (update: Partial<Profile>) => void; onCvUpload: (file: File) => void; onCvDelete: () => void; cvUploading: boolean; storageConfigured: boolean }) {
   return (
     <div className="grid gap-5 xl:grid-cols-2">
       <fieldset className="rounded-2xl border border-line-strong bg-surface/55 p-4 sm:p-5">
@@ -384,6 +443,7 @@ function ProfileEditor({ profile, onChange }: { profile: Profile; onChange: (upd
 
       <fieldset className="rounded-2xl border border-line-strong bg-surface/55 p-4 sm:p-5 xl:col-span-2">
         <legend className="px-2 font-mono text-[10px] font-black tracking-[.18em] text-lime">KONTAK &amp; LINK</legend>
+        <p className="mb-4 text-xs text-on-surface-variant">Tombol Email, Telepon, GitHub, dan LinkedIn mengikuti nilai di bawah. Tambahkan tombol lain di bagian tautan tambahan.</p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <ProfileField label="Email" value={profile.email} onChange={(email) => onChange({ email })} type="email" />
           <ProfileField label="Nomor telepon / WhatsApp" value={profile.phone} onChange={(phone) => onChange({ phone })} placeholder="+62…" />
@@ -392,6 +452,37 @@ function ProfileEditor({ profile, onChange }: { profile: Profile; onChange: (upd
           <ProfileField label="LinkedIn" value={profile.linkedin} onChange={(linkedin) => onChange({ linkedin })} type="url" />
           <div className="sm:col-span-2 lg:col-span-1">
             <ProfileArea label="Pesan availability" value={profile.availability} onChange={(availability) => onChange({ availability })} rows={3} />
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset className="rounded-2xl border border-line-strong bg-surface/55 p-4 sm:p-5 xl:col-span-2">
+        <legend className="px-2 font-mono text-[10px] font-black tracking-[.18em] text-cyan">TOMBOL TAUTAN TAMBAHAN</legend>
+        <div className="space-y-3">
+          {profile.extraLinks.map((link, index) => (
+            <div key={index} className="grid gap-3 rounded-xl border border-line-strong bg-surface-container/70 p-3 sm:grid-cols-[1fr_2fr_auto]">
+              <ProfileField label="Label tombol" value={link.label} onChange={(label) => onChange({ extraLinks: profile.extraLinks.map((item, i) => i === index ? { ...item, label } : item) })} placeholder="GitLab, X, WhatsApp…" />
+              <ProfileField label="URL atau alamat" value={link.url} onChange={(url) => onChange({ extraLinks: profile.extraLinks.map((item, i) => i === index ? { ...item, url } : item) })} placeholder="https://… atau mailto:…" />
+              <button type="button" onClick={() => onChange({ extraLinks: profile.extraLinks.filter((_, i) => i !== index) })} className="self-end rounded-full border border-pink/40 px-4 py-3 text-sm font-bold text-pink hover:bg-pink/10">Hapus</button>
+            </div>
+          ))}
+          <button type="button" disabled={profile.extraLinks.length >= 12} onClick={() => onChange({ extraLinks: [...profile.extraLinks, { label: '', url: '' }] })} className="rounded-full border border-line-strong px-5 py-2.5 text-sm font-bold text-cotton hover:border-cyan disabled:opacity-50">＋ Tambah tombol tautan</button>
+        </div>
+      </fieldset>
+
+      <fieldset className="rounded-2xl border border-line-strong bg-surface/55 p-4 sm:p-5 xl:col-span-2">
+        <legend className="px-2 font-mono text-[10px] font-black tracking-[.18em] text-yellow">CV / RESUME</legend>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-bold text-cotton">{profile.cvFileName ? 'CV tersedia untuk diunduh' : 'Belum ada CV yang diunggah'}</p>
+            <p className="mt-1 text-xs text-on-surface-variant">PDF, maksimal 10 MB. File tersimpan di GitHub storage.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className={`cursor-pointer rounded-full bg-yellow px-5 py-2.5 text-sm font-black text-ink ${!storageConfigured || cvUploading ? 'pointer-events-none opacity-50' : ''}`}>
+              {cvUploading ? 'Memproses…' : profile.cvFileName ? 'Ganti CV' : 'Upload CV'}
+              <input type="file" accept="application/pdf,.pdf" disabled={!storageConfigured || cvUploading} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onCvUpload(file); event.currentTarget.value = ''; }} className="sr-only" />
+            </label>
+            {profile.cvFileName ? <button type="button" onClick={onCvDelete} disabled={cvUploading} className="rounded-full border border-pink/50 px-5 py-2.5 text-sm font-bold text-pink hover:bg-pink/10 disabled:opacity-50">Hapus CV</button> : null}
           </div>
         </div>
       </fieldset>
@@ -418,7 +509,11 @@ function ProfileArea({ label, value, onChange, rows }: { label: string; value: s
 }
 
 function profileCompletion(profile: Profile) {
-  const values = Object.values(profile).flatMap((value) => Array.isArray(value) ? value : [value]);
+  const values = Object.values(profile).flatMap((value) => {
+    if (typeof value === 'string') return [value];
+    if (!Array.isArray(value)) return [];
+    return value.flatMap((item) => typeof item === 'string' ? [item] : item && typeof item === 'object' ? Object.values(item).filter((entry): entry is string => typeof entry === 'string') : []);
+  });
   return Math.round((values.filter((value) => Boolean(value.trim())).length / values.length) * 100);
 }
 

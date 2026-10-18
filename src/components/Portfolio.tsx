@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import Image from 'next/image';
 import type { RefObject } from 'react';
 import type { CSSProperties, ReactNode, SVGProps } from 'react';
 import { animate, onScroll, stagger } from 'animejs';
@@ -126,19 +127,9 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
     let resourcesReady = false;
     let finishing = false;
     const started = performance.now();
-    const minimum = reduced ? 180 : 1500;
-    const preload = (src: string) => new Promise<void>((resolve) => {
-      const image = new Image();
-      image.onload = () => resolve();
-      image.onerror = () => resolve();
-      image.src = src;
-    });
+    const minimum = reduced ? 180 : 750;
     const fontsReady = 'fonts' in document ? document.fonts.ready.then(() => undefined) : Promise.resolve();
-    Promise.all([
-      fontsReady,
-      preload('/assets/hilmi-orbit-world.png'),
-      preload('/assets/hilmi-workstation-island.png'),
-    ]).finally(() => { resourcesReady = true; });
+    fontsReady.then(() => { resourcesReady = true; }, () => { resourcesReady = true; });
 
     const onPointerMove = (event: PointerEvent) => {
       if (reduced) return;
@@ -807,27 +798,26 @@ function SmartImage({
   className?: string;
   fallback?: ReactNode;
 }) {
-  const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
+  const [loadedSrc, setLoadedSrc] = useState('');
+  const [failedSrc, setFailedSrc] = useState('');
+  const status = failedSrc === src ? 'error' : loadedSrc === src ? 'ok' : 'loading';
 
-  useEffect(() => {
-    let live = true;
-    const img = new Image();
-    img.onload = () => live && setStatus('ok');
-    img.onerror = () => live && setStatus('error');
-    img.src = src;
-    return () => {
-      live = false;
-    };
-  }, [src]);
-
-  if (status === 'ok') {
-    // eslint-disable-next-line @next/next/no-img-element -- remote images w/ runtime fallback
-    return <img src={src} alt={alt} className={`${className ?? ''} image-loaded`} loading="lazy" />;
-  }
   if (status === 'error' && fallback) {
     return <>{fallback}</>;
   }
-  return <div className={`${className ?? ''} image-skeleton`} aria-hidden="true" />;
+  return (
+    <div className={`${className ?? ''} ${status === 'loading' ? 'image-skeleton' : ''}`}>
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="(max-width: 768px) 100vw, 50vw"
+        onLoad={() => setLoadedSrc(src)}
+        onError={() => setFailedSrc(src)}
+        className={`absolute inset-0 h-full w-full object-cover ${status === 'ok' ? 'image-loaded' : 'opacity-0'}`}
+      />
+    </div>
+  );
 }
 
 function CursorSpotlight({
@@ -1288,8 +1278,7 @@ function GlobeScene({ reduced, location }: { reduced: boolean; location: string 
     <div ref={sceneRef} className="globe-scene" aria-label="A playful interactive globe representing remote-ready digital work">
       <div className="globe-shadow" aria-hidden="true" />
       <div className="globe-asset-wrap" aria-hidden="true">
-        {/* eslint-disable-next-line @next/next/no-img-element -- generated transparent portfolio artwork */}
-        <img src="/assets/hilmi-orbit-world.png" alt="" className="globe-asset" />
+        <Image src="/assets/hilmi-orbit-world.webp" alt="" width={1254} height={1254} sizes="(max-width: 768px) 80vw, 40vw" className="globe-asset" />
       </div>
       <div className="globe-pin pin-kendari" aria-hidden="true"><span /> {location}</div>
       <DragSticker className="sticker-code" reduced={reduced}>&lt;/&gt;</DragSticker>
@@ -1642,7 +1631,7 @@ type Project = { name: string; url: string; title: string; desc: string; techSta
 const FALLBACK_PROJECTS: Project[] = [
   {
     name: 'infrastructure-operations.webp',
-    url: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.08.jpeg',
+    url: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.08.webp',
     title: 'Infrastructure Operations',
     desc: 'Reliable network, hardware, and system support shaped around clear documentation and calm incident response.',
     techStack: [
@@ -1653,7 +1642,7 @@ const FALLBACK_PROJECTS: Project[] = [
   },
   {
     name: 'support-automation.webp',
-    url: '/foto/IMG_20260709_130641.jpg',
+    url: '/foto/IMG_20260709_130641.webp',
     title: 'Support Automation',
     desc: 'Purpose-built tools that turn repetitive support work into fast, traceable, and human-friendly workflows.',
     techStack: [
@@ -1664,7 +1653,7 @@ const FALLBACK_PROJECTS: Project[] = [
   },
   {
     name: 'full-stack-platforms.webp',
-    url: '/foto/WhatsApp%20Image%202026-07-09%20at%2012.06.57.jpeg',
+    url: '/foto/WhatsApp%20Image%202026-07-09%20at%2012.06.57.webp',
     title: 'Full-Stack Platforms',
     desc: 'Polished web products built from interface to database with a focus on clarity, speed, and dependable delivery.',
     techStack: [
@@ -1801,7 +1790,7 @@ function Projects() {
 
 const WORLD_STOPS = [
   {
-    img: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.08.jpeg',
+    img: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.08.webp',
     eyebrow: '01 · The bench',
     short: 'The bench',
     title: 'From the workbench up.',
@@ -1810,7 +1799,7 @@ const WORLD_STOPS = [
     accent: '#ffd84d',
   },
   {
-    img: '/foto/IMG_20260709_130641.jpg',
+    img: '/foto/IMG_20260709_130641.webp',
     eyebrow: '02 · The code',
     short: 'The code',
     title: 'Where maintenance meets software.',
@@ -1819,7 +1808,7 @@ const WORLD_STOPS = [
     accent: '#42dcff',
   },
   {
-    img: '/foto/WhatsApp%20Image%202026-07-09%20at%2012.06.57.jpeg',
+    img: '/foto/WhatsApp%20Image%202026-07-09%20at%2012.06.57.webp',
     eyebrow: '03 · On the floor',
     short: 'On the floor',
     title: 'Hands-on support.',
@@ -1828,7 +1817,7 @@ const WORLD_STOPS = [
     accent: '#ff5cbb',
   },
   {
-    img: '/foto/WhatsApp%20Image%202026-07-11%20at%2012.08.26.jpeg',
+    img: '/foto/WhatsApp%20Image%202026-07-11%20at%2012.08.26.webp',
     eyebrow: '04 · The infrastructure',
     short: 'Infrastructure',
     title: 'Keeping systems alive.',
@@ -2068,6 +2057,9 @@ function Contact({ profile }: { profile: Profile }) {
     { label: 'LinkedIn', href: profile.linkedin, icon: <LinkedInIcon className="w-4 h-4" /> },
     { label: 'Email', href: profile.email ? `mailto:${profile.email}` : '', icon: <MailIcon className="w-4 h-4" /> },
     { label: 'Phone', href: profile.phone ? `tel:${profile.phone.replace(/[^\d+]/g, '')}` : '', icon: <PhoneIcon className="w-4 h-4" /> },
+    ...profile.extraLinks
+      .filter((link) => link.label.trim() && /^(https?:\/\/|mailto:|tel:)/i.test(link.url.trim()))
+      .map((link) => ({ label: link.label.trim(), href: link.url.trim(), icon: <ArrowUpRightIcon className="w-4 h-4" /> })),
   ].filter((social) => Boolean(social.href));
   return (
     <section id="contact" className="relative border-t border-line-strong bg-surface-container/25 scroll-mt-16">
@@ -2103,16 +2095,24 @@ function Contact({ profile }: { profile: Profile }) {
                     {s.label}
                   </a>
                 ))}
+                {profile.cvFileName ? (
+                  <a href="/api/cv" download className="inline-flex items-center gap-2.5 rounded-full border-2 border-ink bg-yellow px-5 py-2.5 text-sm font-black text-ink shadow-[3px_4px_0_var(--color-ink)] transition-transform hover:-translate-y-1">
+                    Download CV <span aria-hidden="true">↓</span>
+                  </a>
+                ) : null}
               </div>
             </div>
 
             <div className="contact-action relative z-[3] flex flex-col items-center">
-              {/* eslint-disable-next-line @next/next/no-img-element -- generated transparent portfolio artwork */}
-              <img
-                src="/assets/hilmi-workstation-island.png"
+              <Image
+                src="/assets/hilmi-workstation-island.webp"
                 alt="3D workstation with server, laptop, and network cables"
+                width={1400}
+                height={933}
+                sizes="(max-width: 768px) 100vw, 448px"
                 className="contact-asset w-full max-w-md"
                 loading="lazy"
+                decoding="async"
               />
               <Magnetic strength={0.25}>
                 <a
