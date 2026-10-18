@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import type { RefObject } from 'react';
 import type { CSSProperties, ReactNode, SVGProps } from 'react';
 import { animate, onScroll, stagger } from 'animejs';
 import type { JSAnimation, ScrollObserver } from 'animejs';
@@ -63,6 +64,51 @@ function useReducedMotion() {
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     () => false
   );
+}
+
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+const clampTo = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+
+/** Runs `callback` at most once per animation frame while the page scrolls or resizes. */
+function useScrollFrame(callback: () => void, enabled: boolean) {
+  const callbackRef = useRef(callback);
+  useEffect(() => {
+    callbackRef.current = callback;
+  });
+
+  useEffect(() => {
+    if (!enabled) return;
+    let raf = 0;
+    const run = () => {
+      raf = 0;
+      callbackRef.current();
+    };
+    const queue = () => {
+      if (!raf) raf = requestAnimationFrame(run);
+    };
+    run();
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue);
+    return () => {
+      window.removeEventListener('scroll', queue);
+      window.removeEventListener('resize', queue);
+      cancelAnimationFrame(raf);
+      callbackRef.current(); // settle on the final scroll position when switched off
+    };
+  }, [enabled]);
+}
+
+/** True while the element is within `margin` of the viewport, so scroll effects can sleep elsewhere. */
+function useNearViewport(ref: RefObject<Element | null>, margin = '40% 0px') {
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setNear(entry.isIntersecting), { rootMargin: margin });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, margin]);
+  return near;
 }
 
 function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; profile: Profile; onComplete: () => void }) {
@@ -210,14 +256,20 @@ function SmoothScroll() {
     let raf = 0;
     let running = false;
 
-    const tick = () => {
+    let lastFrame = 0;
+    // Frame-rate independent ease (≈ the old 0.12-per-frame feel at 60Hz, same on 120/144Hz screens).
+    const tick = (now: number) => {
       running = false;
-      cur += (target - cur) * 0.12;
+      const dt = lastFrame ? Math.min(64, now - lastFrame) : 16.7;
+      lastFrame = now;
+      cur += (target - cur) * (1 - Math.exp(-dt / 130));
       if (Math.abs(target - cur) < 0.4) cur = target;
       window.scrollTo(0, cur);
       if (Math.abs(target - cur) > 0.4) {
         running = true;
         raf = requestAnimationFrame(tick);
+      } else {
+        lastFrame = 0;
       }
     };
     const start = () => {
@@ -227,13 +279,29 @@ function SmoothScroll() {
       }
     };
     const onWheel = (e: WheelEvent) => {
+      // Leave pinch/ctrl-zoom and sideways gestures to the browser.
+      if (e.ctrlKey || e.metaKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
       e.preventDefault();
+      // Firefox reports wheel notches in lines (deltaMode 1), not pixels.
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
       const max = html.scrollHeight - window.innerHeight;
-      target = Math.min(max, Math.max(0, target + e.deltaY));
+      target = Math.min(max, Math.max(0, target + e.deltaY * unit));
       start();
     };
     const onNativeScroll = () => {
-      if (!running) target = window.scrollY;
+      if (!running) {
+        target = window.scrollY;
+        cur = window.scrollY;
+        return;
+      }
+      // A scroll we didn't cause (scrollTo, keyboard, scrollbar drag): yield to it instead of fighting.
+      if (Math.abs(window.scrollY - cur) > 2) {
+        cancelAnimationFrame(raf);
+        running = false;
+        lastFrame = 0;
+        target = window.scrollY;
+        cur = window.scrollY;
+      }
     };
     const onAnchorClick = (e: MouseEvent) => {
       const a = (e.target as HTMLElement).closest('a[href^="#"]');
@@ -1112,6 +1180,85 @@ function Navbar({ theme, onToggle }: { theme: string; onToggle: () => void }) {
   );
 }
 
+/** Decorative sticker you can pick up and throw; it springs back to its spot. Fine pointers only. */
+function DragSticker({ className, children, reduced }: { className: string; children: ReactNode; reduced: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !window.matchMedia('(pointer: fine)').matches) return;
+    el.dataset.drag = 'true';
+    const pos = { x: 0, y: 0 };
+    let tilt = 0;
+    let anim: JSAnimation | null = null;
+    let origin = { px: 0, py: 0, x: 0, y: 0 };
+    let grabbed = false;
+
+    const apply = () => {
+      el.style.setProperty('--dx', `${pos.x.toFixed(1)}px`);
+      el.style.setProperty('--dy', `${pos.y.toFixed(1)}px`);
+      el.style.setProperty('--dr', `${tilt.toFixed(2)}deg`);
+    };
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      anim?.pause();
+      grabbed = true;
+      el.setPointerCapture(e.pointerId);
+      el.dataset.dragging = 'true';
+      origin = { px: e.clientX, py: e.clientY, x: pos.x, y: pos.y };
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!grabbed) return;
+      const nx = clampTo(origin.x + e.clientX - origin.px, -420, 420);
+      const ny = clampTo(origin.y + e.clientY - origin.py, -420, 420);
+      tilt = clampTo((nx - pos.x) * 0.7, -14, 14); // lean into the movement
+      pos.x = nx;
+      pos.y = ny;
+      apply();
+    };
+    const onUp = () => {
+      if (!grabbed) return;
+      grabbed = false;
+      delete el.dataset.dragging;
+      anim = animate(pos, {
+        x: 0,
+        y: 0,
+        duration: reduced ? 220 : 950,
+        ease: reduced ? 'outQuad' : 'outElastic(1, .55)',
+        onUpdate: () => {
+          tilt *= 0.9;
+          apply();
+        },
+        onComplete: () => {
+          tilt = 0;
+          apply();
+        },
+      });
+    };
+
+    el.addEventListener('pointerdown', onDown);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
+    return () => {
+      el.removeEventListener('pointerdown', onDown);
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+      anim?.pause();
+      delete el.dataset.drag;
+      delete el.dataset.dragging;
+      ['--dx', '--dy', '--dr'].forEach((name) => el.style.removeProperty(name));
+    };
+  }, [reduced]);
+
+  return (
+    <div ref={ref} className={`globe-sticker ${className}`} aria-hidden="true">
+      {children}
+    </div>
+  );
+}
+
 function GlobeScene({ reduced, location }: { reduced: boolean; location: string }) {
   const sceneRef = useRef<HTMLDivElement>(null);
 
@@ -1145,9 +1292,9 @@ function GlobeScene({ reduced, location }: { reduced: boolean; location: string 
         <img src="/assets/hilmi-orbit-world.png" alt="" className="globe-asset" />
       </div>
       <div className="globe-pin pin-kendari" aria-hidden="true"><span /> {location}</div>
-      <div className="globe-sticker sticker-code" aria-hidden="true">&lt;/&gt;</div>
-      <div className="globe-sticker sticker-spark" aria-hidden="true">✦</div>
-      <div className="globe-sticker sticker-cloud" aria-hidden="true">24/7</div>
+      <DragSticker className="sticker-code" reduced={reduced}>&lt;/&gt;</DragSticker>
+      <DragSticker className="sticker-spark" reduced={reduced}>✦</DragSticker>
+      <DragSticker className="sticker-cloud" reduced={reduced}>24/7</DragSticker>
       <div className="globe-caption" aria-hidden="true">
         <span>REMOTE READY</span>
         <span className="caption-dot" />
@@ -1205,6 +1352,14 @@ function Hero({ reduced, ready, profile }: { reduced: boolean; ready: boolean; p
     return () => cleanup.forEach((fn) => fn());
   }, [reduced]);
 
+  // Scroll-scrubbed exit: --hero-p (0 → 1) drives the copy drifting up and the globe tipping away.
+  const heroNear = useNearViewport(heroRef, '10% 0px');
+  useScrollFrame(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    el.style.setProperty('--hero-p', clamp01(window.scrollY / Math.max(1, el.offsetHeight)).toFixed(3));
+  }, !reduced && heroNear);
+
   useEffect(() => {
     const el = heroRef.current;
     if (!el) return;
@@ -1250,7 +1405,7 @@ function Hero({ reduced, ready, profile }: { reduced: boolean; ready: boolean; p
       >CREATE</div>
 
       <div className="relative mx-auto max-w-[82rem] px-5 sm:px-8 w-full grid lg:grid-cols-[1.08fr_0.92fr] gap-12 lg:gap-8 items-center py-24 sm:py-28">
-        <div>
+        <div className="hero-exit-copy">
           <div
             data-hero
             style={{ opacity: 0 }}
@@ -1317,7 +1472,9 @@ function Hero({ reduced, ready, profile }: { reduced: boolean; ready: boolean; p
         </div>
 
         <div data-hero style={{ opacity: 0 }} className="relative min-h-[27rem] sm:min-h-[34rem] lg:min-h-[40rem] flex items-center justify-center">
-          <GlobeScene reduced={reduced} location={profile.locationShort} />
+          <div className="hero-exit-globe">
+            <GlobeScene reduced={reduced} location={profile.locationShort} />
+          </div>
         </div>
       </div>
 
@@ -1520,6 +1677,21 @@ const FALLBACK_PROJECTS: Project[] = [
 
 function Projects() {
   const [projects, setProjects] = useState<Project[] | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const listNear = useNearViewport(listRef, '30% 0px');
+
+  // --pp (-1 → 1) is how far each row sits from the viewport centre; the image drifts against the scroll.
+  useScrollFrame(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const vh = window.innerHeight;
+    list.querySelectorAll<HTMLElement>('.project-row').forEach((row) => {
+      const rect = row.getBoundingClientRect();
+      const p = clampTo((rect.top + rect.height / 2 - vh / 2) / (vh / 2 + rect.height / 2), -1, 1);
+      row.style.setProperty('--pp', p.toFixed(3));
+    });
+  }, !reduced && !!projects && listNear);
 
   useEffect(() => {
     let live = true;
@@ -1541,7 +1713,7 @@ function Projects() {
         gradient={['lately']}
       />
 
-      <div className="space-y-24 sm:space-y-32">
+      <div ref={listRef} className="space-y-24 sm:space-y-32">
         {projects?.map((p, i) => (
           <Reveal key={p.name} delay={60}>
             <article className="project-row group relative grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
@@ -1553,12 +1725,14 @@ function Projects() {
                 <Tilt className="relative">
                   <div className="relative rounded-2xl overflow-hidden border-[3px] border-ink bg-surface-container aspect-[16/11] animated-border shadow-[10px_12px_0_var(--color-ink)]">
                     <ImageReveal className="absolute inset-0">
-                      <SmartImage
-                        src={p.url}
-                        alt={`${p.title || toTitle(p.name)} preview`}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                        fallback={<ProjectFallback name={p.title || toTitle(p.name)} />}
-                      />
+                      <div className="project-parallax">
+                        <SmartImage
+                          src={p.url}
+                          alt={`${p.title || toTitle(p.name)} preview`}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                          fallback={<ProjectFallback name={p.title || toTitle(p.name)} />}
+                        />
+                      </div>
                     </ImageReveal>
                     <div
                       className="absolute inset-0 bg-gradient-to-t from-surface/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
@@ -1629,6 +1803,7 @@ const WORLD_STOPS = [
   {
     img: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.08.jpeg',
     eyebrow: '01 · The bench',
+    short: 'The bench',
     title: 'From the workbench up.',
     body: 'Every system I touch gets the same treatment — diagnosed, stabilized, documented.',
     tags: ['Support', 'Troubleshooting', 'Maintenance'],
@@ -1637,6 +1812,7 @@ const WORLD_STOPS = [
   {
     img: '/foto/IMG_20260709_130641.jpg',
     eyebrow: '02 · The code',
+    short: 'The code',
     title: 'Where maintenance meets software.',
     body: 'Support tools, dashboards, and full apps — shipped with Next.js & TypeScript.',
     tags: ['Next.js', 'TypeScript', 'Full-Stack'],
@@ -1645,6 +1821,7 @@ const WORLD_STOPS = [
   {
     img: '/foto/WhatsApp%20Image%202026-07-09%20at%2012.06.57.jpeg',
     eyebrow: '03 · On the floor',
+    short: 'On the floor',
     title: 'Hands-on support.',
     body: 'Close to the end user, on-site when it counts, calm under pressure.',
     tags: ['IT Support', 'Network', 'On-site'],
@@ -1653,6 +1830,7 @@ const WORLD_STOPS = [
   {
     img: '/foto/WhatsApp%20Image%202026-07-11%20at%2012.08.26.jpeg',
     eyebrow: '04 · The infrastructure',
+    short: 'Infrastructure',
     title: 'Keeping systems alive.',
     body: 'Servers, switches, and the connections between them — stable and monitored.',
     tags: ['Infrastructure', 'Server', 'Network'],
@@ -1662,51 +1840,157 @@ const WORLD_STOPS = [
 
 function WorldScroll() {
   const sectionRef = useRef<HTMLElement>(null);
+  const stickyRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(-1);
   const reduced = useReducedMotion();
 
   useEffect(() => {
     const section = sectionRef.current;
     const track = trackRef.current;
-    if (!section || !track || reduced) return;
+    const sticky = stickyRef.current;
+    if (!section || !track || !sticky || reduced) return;
+    const cards = Array.from(track.querySelectorAll<HTMLElement>('.world-card'));
+
+    // Layout is measured only on mount/resize; per-frame work reads nothing from the DOM.
+    let travel = 0;
+    let centers: number[] = [];
+    let widths: number[] = [];
     let raf = 0;
-    const update = () => {
+    let skew = 0;
+    let lastX = 0;
+    let isStatic = false;
+    let lastActive = -2;
+    const lastFocus: number[] = [];
+    const lastPar: number[] = [];
+    const dims = cards.map((card) => card.querySelector<HTMLElement>('.world-dim'));
+    const pars = cards.map((card) => card.querySelector<HTMLElement>('.world-parallax'));
+
+    const measure = () => {
+      const vw = window.innerWidth;
+      travel = Math.max(0, track.scrollWidth - vw + vw * 0.12);
+      centers = cards.map((card) => card.offsetLeft + card.offsetWidth / 2);
+      widths = cards.map((card) => card.offsetWidth);
+    };
+
+    const reset = () => {
+      track.style.transform = '';
+      cards.forEach((card, i) => {
+        card.style.removeProperty('scale');
+        dims[i]?.style.removeProperty('opacity');
+        pars[i]?.style.removeProperty('translate');
+      });
+      sticky.style.removeProperty('--world-accent');
+      lastFocus.length = 0;
+      lastPar.length = 0;
+      skew = 0;
+      lastX = 0;
+    };
+
+    const frame = () => {
       raf = 0;
-      if (window.innerWidth < 900) {
-        track.style.transform = '';
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      if (vw < 900) {
+        // Narrow screens use the native horizontal scroller (see CSS).
+        if (!isStatic) {
+          reset();
+          isStatic = true;
+          lastActive = -2;
+          setActive(-1);
+        }
         return;
       }
-      const rect = section.getBoundingClientRect();
-      const range = Math.max(1, section.offsetHeight - window.innerHeight);
-      const progress = Math.min(1, Math.max(0, -rect.top / range));
-      const travel = Math.max(0, track.scrollWidth - window.innerWidth + window.innerWidth * 0.12);
-      track.style.transform = `translate3d(${(-travel * progress).toFixed(1)}px, 0, 0)`;
+      isStatic = false;
+
+      const range = Math.max(1, section.offsetHeight - vh);
+      const progress = clamp01(-section.getBoundingClientRect().top / range);
+      const x = -travel * progress;
+      // Skew eases toward the horizontal speed, then relaxes to 0 once scrolling stops.
+      skew += (clampTo((x - lastX) * -0.07, -4, 4) - skew) * 0.2;
+      lastX = x;
+      track.style.transform = `translate3d(${x.toFixed(1)}px,0,0) skewX(${skew.toFixed(2)}deg)`;
       if (progressRef.current) progressRef.current.style.transform = `scaleX(${progress})`;
+
+      let best = -1;
+      let bestFocus = 0;
+      cards.forEach((card, i) => {
+        const d = (centers[i] + x - vw / 2) / (vw * 0.55);
+        const focus = clamp01(1 - Math.abs(d));
+        const reach = widths[i] * 0.085;
+        const par = Math.round(clampTo(-d * widths[i] * 0.09, -reach, reach) * 2) / 2;
+        const f = Math.round(focus * 200) / 200;
+        if (f !== lastFocus[i]) {
+          lastFocus[i] = f;
+          card.style.scale = String(0.92 + f * 0.08);
+          const dim = dims[i];
+          if (dim) dim.style.opacity = String((1 - f) * 0.55);
+        }
+        if (par !== lastPar[i]) {
+          lastPar[i] = par;
+          const layer = pars[i];
+          if (layer) layer.style.translate = `${par}px 0`;
+        }
+        if (focus > bestFocus) {
+          bestFocus = focus;
+          best = i;
+        }
+      });
+      const next = bestFocus > 0.45 ? best : -1;
+      if (next !== lastActive) {
+        lastActive = next;
+        setActive(next);
+        if (next >= 0) sticky.style.setProperty('--world-accent', WORLD_STOPS[next].accent);
+        else sticky.style.removeProperty('--world-accent');
+      }
+      if (Math.abs(skew) > 0.02) raf = requestAnimationFrame(frame);
     };
-    const onUpdate = () => {
-      if (!raf) raf = requestAnimationFrame(update);
+
+    const queue = () => {
+      if (!raf) raf = requestAnimationFrame(frame);
     };
-    update();
-    window.addEventListener('scroll', onUpdate, { passive: true });
-    window.addEventListener('resize', onUpdate);
+    const onResize = () => {
+      measure();
+      queue();
+    };
+
+    measure();
+    frame();
+    if ('fonts' in document) document.fonts.ready.then(onResize);
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', onResize);
     return () => {
-      window.removeEventListener('scroll', onUpdate);
-      window.removeEventListener('resize', onUpdate);
+      window.removeEventListener('scroll', queue);
+      window.removeEventListener('resize', onResize);
       cancelAnimationFrame(raf);
+      reset();
     };
   }, [reduced]);
 
+  const jumpTo = (index: number) => {
+    const section = sectionRef.current;
+    const track = trackRef.current;
+    const card = track?.querySelectorAll<HTMLElement>('.world-card')[index];
+    if (!section || !track || !card) return;
+    const vw = window.innerWidth;
+    const range = Math.max(1, section.offsetHeight - window.innerHeight);
+    const travel = Math.max(0, track.scrollWidth - vw + vw * 0.12);
+    const needed = clampTo(card.offsetLeft + card.offsetWidth / 2 - vw / 2, 0, travel);
+    const top = section.getBoundingClientRect().top + window.scrollY + (travel ? needed / travel : 0) * range;
+    window.scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' });
+  };
+
   return (
-    <section id="story" ref={sectionRef} className="world-section relative border-y border-line-strong scroll-mt-16">
-      <div className="world-sticky sticky top-0 h-screen overflow-hidden flex items-center">
+    <section id="story" ref={sectionRef} data-static={reduced ? 'true' : undefined} className="world-section relative border-y border-line-strong scroll-mt-16">
+      <div ref={stickyRef} className="world-sticky sticky top-0 h-screen overflow-hidden flex items-center">
         <div className="absolute inset-0 world-grid pointer-events-none" aria-hidden="true" />
         <div className="absolute left-5 sm:left-8 top-24 z-20 flex items-center gap-4 font-mono text-[10px] sm:text-xs font-bold tracking-[0.22em] text-on-surface-variant">
           <span className="text-yellow">04</span>
           <span>SCROLL THE WORLD</span>
           <span className="hidden sm:block w-24 h-px bg-line-strong" />
         </div>
-        <div ref={trackRef} className="world-track flex items-stretch gap-8 sm:gap-12 px-[7vw] will-change-transform">
+        <div ref={trackRef} className="world-track relative flex items-stretch gap-8 sm:gap-12 px-[7vw] will-change-transform">
           <article className="world-intro shrink-0 flex flex-col justify-center w-[84vw] lg:w-[62vw] xl:w-[48vw] pr-6">
             <span className="world-kicker">FIELD NOTES / 2026</span>
             <h2 className="font-display font-black tracking-[-0.055em] text-[clamp(3.4rem,8vw,7.8rem)] leading-[.9] text-cotton mt-5">
@@ -1727,7 +2011,10 @@ function WorldScroll() {
               style={{ '--scene-accent': scene.accent } as CSSProperties}
             >
               <div className="world-card-image">
-                <SmartImage src={scene.img} alt={`${scene.title} — field work`} className="absolute inset-0 w-full h-full object-cover" fallback={<ProjectFallback name={scene.title} />} />
+                <div className="world-dim" aria-hidden="true" />
+                <div className="world-parallax">
+                  <SmartImage src={scene.img} alt={`${scene.title} — field work`} className="absolute inset-0 w-full h-full object-cover" fallback={<ProjectFallback name={scene.title} />} />
+                </div>
                 <div className="world-card-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
               </div>
               <div className="world-card-copy">
@@ -1750,8 +2037,25 @@ function WorldScroll() {
             </a>
           </article>
         </div>
-        <div className="absolute bottom-6 left-[7vw] right-[7vw] h-1 rounded-full bg-line-strong overflow-hidden">
-          <div ref={progressRef} className="h-full origin-left bg-yellow" style={{ transform: 'scaleX(0)' }} />
+
+        <nav className="world-steps" aria-label="Journey scenes">
+          {WORLD_STOPS.map((scene, index) => (
+            <button
+              key={scene.short}
+              type="button"
+              onClick={() => jumpTo(index)}
+              aria-current={active === index ? 'step' : undefined}
+              aria-label={`Scene ${index + 1}: ${scene.short}`}
+              className="world-step"
+              style={{ '--scene-accent': scene.accent } as CSSProperties}
+            >
+              <span className="world-step-count">{String(index + 1).padStart(2, '0')}</span>
+              <span className="world-step-name">{scene.short}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="world-progress-wrap absolute bottom-6 left-[7vw] right-[7vw] h-1 rounded-full bg-line-strong overflow-hidden">
+          <div ref={progressRef} className="world-progress h-full origin-left" style={{ transform: 'scaleX(0)' }} />
         </div>
       </div>
     </section>
@@ -1824,6 +2128,47 @@ function Contact({ profile }: { profile: Profile }) {
         </Reveal>
       </div>
     </section>
+  );
+}
+
+const RAIL = [
+  { id: 'top', label: 'Intro' },
+  { id: 'about', label: 'About' },
+  { id: 'skills', label: 'Skills' },
+  { id: 'projects', label: 'Work' },
+  { id: 'story', label: 'Journey' },
+  { id: 'contact', label: 'Contact' },
+];
+
+/** Persistent wayfinding: the top navbar hides while scrolling down, so this keeps "where am I" visible. */
+function SectionRail() {
+  const [active, setActive] = useState('top');
+
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        });
+      },
+      { rootMargin: '-45% 0px -50% 0px' }
+    );
+    RAIL.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    });
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <nav aria-label="Page sections" className="section-rail hidden xl:flex">
+      {RAIL.map((item) => (
+        <a key={item.id} href={`#${item.id}`} aria-current={active === item.id ? 'location' : undefined} className="rail-link">
+          <span className="rail-label">{item.label}</span>
+          <span className="rail-dot" aria-hidden="true" />
+        </a>
+      ))}
+    </nav>
   );
 }
 
@@ -1918,6 +2263,7 @@ export default function Portfolio() {
       <SmoothScroll />
       <ScrollMomentum />
       <ScrollChrome />
+      <SectionRail />
       <div className="fixed inset-0 pointer-events-none z-[1] grain" aria-hidden="true" />
       <Navbar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
 
