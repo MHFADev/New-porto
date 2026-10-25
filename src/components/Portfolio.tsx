@@ -2285,18 +2285,14 @@ function ScrollChrome() {
 }
 
 function SnakeAccessory({ reduced }: { reduced: boolean }) {
-  const backRef = useRef<HTMLCanvasElement>(null);
-  const frontRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const back = backRef.current;
-    const front = frontRef.current;
-    if (!back || !front || reduced) return;
-    const backCtx = back.getContext('2d');
-    const frontCtx = front.getContext('2d');
-    if (!backCtx || !frontCtx) return;
-
-    const cell = 16;
+    const canvas = canvasRef.current;
+    if (!canvas || reduced) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const cell = 18;
     const state = {
       head: { x: 5 * cell, y: 9 * cell },
       direction: { x: 1, y: 0 },
@@ -2309,18 +2305,15 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
     let height = 0;
     let raf = 0;
     let last = 0;
-
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       width = window.innerWidth;
       height = window.innerHeight;
-      [back, front].forEach((canvas) => {
-        canvas.width = Math.floor(width * dpr);
-        canvas.height = Math.floor(height * dpr);
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        canvas.getContext('2d')?.setTransform(dpr, 0, 0, dpr, 0, 0);
-      });
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       state.head.x = Math.min(state.head.x, Math.max(cell, width - cell));
       state.head.y = Math.min(state.head.y, Math.max(cell, height - cell));
       if (!state.food.length) {
@@ -2331,14 +2324,12 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
         ];
       }
     };
-
     const turn = () => {
       const horizontal = state.direction.x !== 0;
       state.direction = horizontal
         ? (state.head.y < height * .52 ? { x: 0, y: 1 } : { x: 0, y: -1 })
         : (state.head.x < width * .52 ? { x: 1, y: 0 } : { x: -1, y: 0 });
     };
-
     const spawnFood = () => {
       const slot = state.nextFood++ % 5;
       state.food.push({
@@ -2347,63 +2338,52 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
         phase: slot * .8,
       });
     };
-
-    const drawFood = (ctx: CanvasRenderingContext2D, item: { x: number; y: number; phase: number }, now: number) => {
+    const drawFood = (item: { x: number; y: number; phase: number }, now: number) => {
       const bob = Math.sin(now / 420 + item.phase) * 2;
       ctx.save();
       ctx.translate(item.x, item.y + bob);
-      ctx.fillStyle = 'rgba(255, 92, 187, .88)';
-      ctx.strokeStyle = 'rgba(21, 19, 41, .9)';
+      ctx.fillStyle = '#ff5cbb';
+      ctx.strokeStyle = '#151329';
       ctx.lineWidth = 2;
       ctx.fillRect(-6, -6, 12, 12);
       ctx.strokeRect(-6, -6, 12, 12);
-      ctx.fillStyle = 'rgba(185, 255, 102, .95)';
+      ctx.fillStyle = '#b9ff66';
       ctx.fillRect(2, -10, 5, 4);
       ctx.restore();
     };
-
     const render = (now: number) => {
-      backCtx.clearRect(0, 0, width, height);
-      frontCtx.clearRect(0, 0, width, height);
-      state.food.forEach((item) => {
-        drawFood(backCtx, item, now);
-        drawFood(frontCtx, item, now);
-      });
-
-      backCtx.save();
-      backCtx.globalAlpha = .55;
+      ctx.clearRect(0, 0, width, height);
+      state.food.forEach((item) => drawFood(item, now));
+      ctx.save();
+      ctx.globalAlpha = .72;
       state.history.forEach((point, index) => {
-        const tone = index % 3 === 0 ? '#42dcff' : index % 3 === 1 ? '#ff5cbb' : '#b9ff66';
-        backCtx.fillStyle = tone;
-        backCtx.fillRect(point.x - 6, point.y - 6, 12, 12);
+        const tone = index % 4 === 0 ? '#42dcff' : index % 4 === 1 ? '#ff5cbb' : '#b9ff66';
+        ctx.fillStyle = tone;
+        ctx.fillRect(point.x - 6, point.y - 6, 12, 12);
+        ctx.fillStyle = 'rgba(21, 19, 41, .55)';
+        ctx.fillRect(point.x - 2, point.y - 2, 4, 4);
       });
-      backCtx.restore();
-
-      frontCtx.save();
-      frontCtx.fillStyle = '#ffd84d';
-      frontCtx.strokeStyle = '#151329';
-      frontCtx.lineWidth = 3;
-      frontCtx.fillRect(state.head.x - 8, state.head.y - 8, 16, 16);
-      frontCtx.strokeRect(state.head.x - 8, state.head.y - 8, 16, 16);
-      frontCtx.fillStyle = '#151329';
-      frontCtx.fillRect(state.head.x + state.direction.x * 2 - 3, state.head.y + state.direction.y * 2 - 3, 3, 3);
-      frontCtx.restore();
+      ctx.restore();
+      ctx.save();
+      ctx.fillStyle = '#ffd84d';
+      ctx.strokeStyle = '#151329';
+      ctx.lineWidth = 3;
+      ctx.fillRect(state.head.x - 8, state.head.y - 8, 16, 16);
+      ctx.strokeRect(state.head.x - 8, state.head.y - 8, 16, 16);
+      ctx.fillStyle = '#151329';
+      ctx.fillRect(state.head.x + state.direction.x * 2 - 3, state.head.y + state.direction.y * 2 - 3, 3, 3);
+      ctx.restore();
     };
-
     const frame = (now: number) => {
       if (!last) last = now;
-      if (now - last > 95) {
+      if (now - last > 105) {
         last = now;
         state.head.x += state.direction.x * cell;
         state.head.y += state.direction.y * cell;
         state.history.unshift({ ...state.head });
-        const maxLength = 24 + Math.min(state.nextFood * 3, 22);
-        state.history.length = Math.min(state.history.length, maxLength);
+        state.history.length = Math.min(state.history.length, 24 + Math.min(state.nextFood * 3, 22));
         if (state.head.x < cell || state.head.x > width - cell || state.head.y < cell || state.head.y > height - cell) turn();
-        if (now > state.turnAt) {
-          state.turnAt = now + 1800;
-          turn();
-        }
+        if (now > state.turnAt) { state.turnAt = now + 1800; turn(); }
         state.food = state.food.filter((item) => {
           const eaten = Math.abs(item.x - state.head.x) < cell && Math.abs(item.y - state.head.y) < cell;
           if (eaten) spawnFood();
@@ -2413,23 +2393,14 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
       render(now);
       raf = requestAnimationFrame(frame);
     };
-
     resize();
     window.addEventListener('resize', resize);
     raf = requestAnimationFrame(frame);
-    return () => {
-      window.removeEventListener('resize', resize);
-      cancelAnimationFrame(raf);
-    };
+    return () => { window.removeEventListener('resize', resize); cancelAnimationFrame(raf); };
   }, [reduced]);
 
   if (reduced) return null;
-  return (
-    <>
-      <canvas ref={backRef} className="snake-accessory snake-accessory-back" aria-hidden="true" />
-      <canvas ref={frontRef} className="snake-accessory snake-accessory-front" aria-hidden="true" />
-    </>
-  );
+  return <canvas ref={canvasRef} className="snake-accessory" aria-hidden="true" />;
 }
 
 export default function Portfolio() {
