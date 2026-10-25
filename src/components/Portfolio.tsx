@@ -1744,7 +1744,7 @@ function Projects() {
                 />
                 <Tilt className="relative">
                   <div className="relative rounded-2xl overflow-hidden border-[3px] border-ink bg-surface-container aspect-[16/11] animated-border shadow-[10px_12px_0_var(--color-ink)]">
-                    <ImageReveal className="absolute inset-0">
+                    <div className="absolute inset-0 overflow-hidden">
                       <div className="project-parallax">
                         <SmartImage
                           src={p.url}
@@ -1753,7 +1753,7 @@ function Projects() {
                           fallback={<ProjectFallback name={p.title || toTitle(p.name)} />}
                         />
                       </div>
-                    </ImageReveal>
+                    </div>
                     <div
                       className="absolute inset-0 bg-gradient-to-t from-surface/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                       aria-hidden="true"
