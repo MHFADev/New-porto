@@ -819,7 +819,7 @@ function SmartImage({
         decoding="async"
         onLoad={() => setLoadedSrc(src)}
         onError={() => setFailedSrc(src)}
-        className={`absolute inset-0 h-full w-full object-cover ${status === 'ok' ? 'image-loaded' : 'opacity-0'}`}
+        className="absolute inset-0 h-full w-full object-cover image-loaded"
       />
     </div>
   );
