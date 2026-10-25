@@ -808,11 +808,13 @@ function SmartImage({
   }
   return (
     <div className={`${className ?? ''} ${status === 'loading' ? 'image-skeleton' : ''}`}>
-      <Image
+      {/* Runtime GitHub proxy URLs are not static Next image assets; keep them browser-native. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={src}
         alt={alt}
-        fill
-        sizes="(max-width: 768px) 100vw, 50vw"
+        loading="lazy"
+        decoding="async"
         onLoad={() => setLoadedSrc(src)}
         onError={() => setFailedSrc(src)}
         className={`absolute inset-0 h-full w-full object-cover ${status === 'ok' ? 'image-loaded' : 'opacity-0'}`}
