@@ -585,6 +585,10 @@ h1, h2, h3 { text-wrap: balance; }
 .physics-screw-cross,
 .physics-screw-cross::after { width: 1rem; height: .18rem; border-radius: 99px; background: var(--color-ink); content: ""; }
 .physics-screw-cross::after { display: block; transform: rotate(90deg); }
+.physics-screw[data-turns="1"] { transform: rotate(110deg); }
+.physics-screw[data-turns="2"] { transform: rotate(220deg); }
+.physics-screw[data-turns="3"] { transform: rotate(330deg); }
+.physics-screw-turns { position: absolute; right: -.15rem; bottom: -.45rem; min-width: 1.05rem; padding: .16rem .2rem; border: 1px solid var(--color-ink); border-radius: .3rem; background: var(--color-yellow); color: var(--color-ink); font: 900 .48rem/1 var(--font-jet); box-shadow: 1px 2px 0 var(--color-ink); transform: rotate(-8deg); }
 .physics-screw.is-released { opacity: 0; pointer-events: none; transform: translateY(1.4rem) rotate(720deg) scale(.45); }
 .physics-hint { position: absolute; right: 1rem; bottom: 1.7rem; z-index: 3; color: var(--color-on-surface-variant); font: 700 .55rem/1 var(--font-jet); letter-spacing: .14em; opacity: .45; pointer-events: none; }
 

@@ -13,13 +13,12 @@ type PhysicsWrapperProps = {
 export default function PhysicsWrapper({ children, className = '' }: PhysicsWrapperProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [released, setReleased] = useState([false, false, false, false]);
-  const releasedRef = useRef(released);
-  const screwRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [turns, setTurns] = useState([0, 0, 0, 0]);
+  const turnsRef = useRef(turns);
 
   useEffect(() => {
-    releasedRef.current = released;
-  }, [released]);
+    turnsRef.current = turns;
+  }, [turns]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -34,18 +33,18 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
 
       const engine = Matter.Engine.create({ enableSleeping: false });
       engine.gravity.y = 1;
-      engine.gravity.scale = 0.0018;
+      engine.gravity.scale = 0.0048;
       const runner = Matter.Runner.create();
       const body = Matter.Bodies.rectangle(width / 2, height / 2, width, height, {
         friction: 0.6,
-        frictionAir: 0.035,
-        restitution: 0.16,
+        frictionAir: 0.012,
+        restitution: 0.34,
         density: 0.002,
         chamfer: { radius: 18 },
       });
       const floor = Matter.Bodies.rectangle(width / 2, height + 22, width * 1.6, 36, {
         isStatic: true,
-        restitution: 0.22,
+        restitution: 0.48,
         friction: 0.8,
         label: 'contribution-floor',
       });
@@ -65,8 +64,8 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
         bodyA: body,
         pointA: localPoints[index],
         pointB: anchor,
-        stiffness: 0.92,
-        damping: 0.18,
+        stiffness: 0.48,
+        damping: 0.045,
         length: 0,
       }));
       Matter.Composite.add(engine.world, [body, floor, ...constraints]);
@@ -89,10 +88,14 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
       observer.observe(stage);
 
       const syncReleased = () => {
-        releasedRef.current.forEach((isReleased, index) => {
-          if (isReleased && constraints[index].bodyA) {
+        turnsRef.current.forEach((screwTurns, index) => {
+          if (screwTurns >= 4 && constraints[index].bodyA) {
             Matter.Composite.remove(engine.world, constraints[index]);
             constraints[index].bodyA = null;
+            const horizontalKick = index % 2 === 0 ? -0.0008 : 0.0008;
+            const angularKick = index < 2 ? (index === 0 ? 0.012 : -0.012) : (index === 2 ? -0.012 : 0.012);
+            Matter.Body.applyForce(body, body.position, { x: horizontalKick, y: 0.0012 });
+            Matter.Body.setAngularVelocity(body, body.angularVelocity + angularKick);
           }
         });
       };
@@ -112,11 +115,11 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  const releaseScrew = (index: number) => {
-    setReleased((current) => {
-      if (current[index]) return current;
+  const turnScrew = (index: number) => {
+    setTurns((current) => {
+      if (current[index] >= 4) return current;
       const next = [...current];
-      next[index] = true;
+      next[index] = Math.min(4, next[index] + 1);
       return next;
     });
   };
@@ -130,14 +133,15 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
       {SCREW_NAMES.map((label, index) => (
         <button
           key={label}
-          ref={(node) => { screwRefs.current[index] = node; }}
           type="button"
-          aria-label={released[index] ? `${label} released` : `Loosen ${label}`}
-          aria-pressed={released[index]}
-          className={`physics-screw physics-screw-${index} ${released[index] ? 'is-released' : ''}`}
-          onClick={() => releaseScrew(index)}
+          aria-label={turns[index] >= 4 ? `${label} released` : `${label}, turn ${turns[index]} of 4`}
+          aria-pressed={turns[index] >= 4}
+          data-turns={turns[index]}
+          className={`physics-screw physics-screw-${index} ${turns[index] >= 4 ? 'is-released' : ''}`}
+          onClick={() => turnScrew(index)}
         >
           <span className="physics-screw-cross" aria-hidden="true" />
+          <span className="physics-screw-turns" aria-hidden="true">{turns[index]}/4</span>
         </button>
       ))}
       <div className="physics-hint" aria-hidden="true">UNSCREW TO RELEASE</div>
