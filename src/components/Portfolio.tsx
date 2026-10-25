@@ -2300,6 +2300,7 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
       food: [] as { x: number; y: number; phase: number }[],
       turnAt: 0,
       nextFood: 0,
+      evolution: 0,
     };
     let width = 0;
     let height = 0;
@@ -2354,39 +2355,73 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
     const render = (now: number) => {
       ctx.clearRect(0, 0, width, height);
       state.food.forEach((item) => drawFood(item, now));
+      const stage = Math.min(4, state.evolution);
+      const bodyColors = stage >= 3 ? ['#42dcff', '#ff5cbb', '#b9ff66', '#ffd84d'] : ['#42dcff', '#ff5cbb', '#b9ff66'];
       ctx.save();
       ctx.globalAlpha = .72;
+      ctx.lineWidth = 10 + stage * 2;
+      ctx.lineCap = 'square';
+      ctx.lineJoin = 'miter';
+      ctx.strokeStyle = bodyColors[0];
+      if (state.history.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(state.head.x, state.head.y);
+        state.history.forEach((point) => ctx.lineTo(point.x, point.y));
+        ctx.stroke();
+      }
       state.history.forEach((point, index) => {
-        const tone = index % 4 === 0 ? '#42dcff' : index % 4 === 1 ? '#ff5cbb' : '#b9ff66';
+        const tone = bodyColors[index % bodyColors.length];
         ctx.fillStyle = tone;
         ctx.fillRect(point.x - 8, point.y - 8, 16, 16);
         ctx.fillStyle = 'rgba(21, 19, 41, .55)';
         ctx.fillRect(point.x - 3, point.y - 3, 6, 6);
+        if (stage >= 2 && index % 3 === 0) {
+          ctx.fillStyle = stage >= 4 ? '#ffd84d' : '#ff5cbb';
+          ctx.fillRect(point.x - 11, point.y - 3, 4, 6);
+        }
       });
       ctx.restore();
       ctx.save();
-      ctx.fillStyle = '#ffd84d';
+      ctx.fillStyle = stage >= 3 ? '#ff5cbb' : '#ffd84d';
       ctx.strokeStyle = '#151329';
       ctx.lineWidth = 4;
       ctx.fillRect(state.head.x - 10, state.head.y - 10, 20, 20);
       ctx.strokeRect(state.head.x - 10, state.head.y - 10, 20, 20);
+      if (stage >= 1) {
+        ctx.fillStyle = '#b9ff66';
+        ctx.fillRect(state.head.x - 13, state.head.y - 12, 5, 5);
+        ctx.fillRect(state.head.x + 8, state.head.y - 12, 5, 5);
+      }
+      if (stage >= 3) {
+        ctx.fillStyle = '#42dcff';
+        ctx.fillRect(state.head.x - 4, state.head.y - 15, 8, 5);
+      }
       ctx.fillStyle = '#151329';
       ctx.fillRect(state.head.x + state.direction.x * 3 - 4, state.head.y + state.direction.y * 3 - 4, 4, 4);
+      if (stage >= 2) {
+        ctx.fillStyle = '#ff5cbb';
+        ctx.fillRect(state.head.x + state.direction.x * 11 - 2, state.head.y + state.direction.y * 11 - 2, 5, 4);
+      }
       ctx.restore();
     };
     const frame = (now: number) => {
       if (!last) last = now;
-      if (now - last > 105) {
+      const tick = Math.max(68, 105 - state.evolution * 6);
+      if (now - last > tick) {
         last = now;
         state.head.x += state.direction.x * cell;
         state.head.y += state.direction.y * cell;
         state.history.unshift({ ...state.head });
-        state.history.length = Math.min(state.history.length, 24 + Math.min(state.nextFood * 3, 22));
+        state.history.length = Math.min(state.history.length, 24 + Math.min(state.evolution * 5, 40));
         if (state.head.x < cell || state.head.x > width - cell || state.head.y < cell || state.head.y > height - cell) turn();
         if (now > state.turnAt) { state.turnAt = now + 1800; turn(); }
         state.food = state.food.filter((item) => {
           const eaten = Math.abs(item.x - state.head.x) < cell && Math.abs(item.y - state.head.y) < cell;
-          if (eaten) spawnFood();
+          if (eaten) {
+            state.evolution += 1;
+            spawnFood();
+            if (state.evolution % 2 === 0) spawnFood();
+          }
           return !eaten;
         });
       }
