@@ -2292,7 +2292,7 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
     if (!canvas || reduced) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const cell = 18;
+    const cell = 24;
     const state = {
       head: { x: 5 * cell, y: 9 * cell },
       direction: { x: 1, y: 0 },
@@ -2344,11 +2344,11 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
       ctx.translate(item.x, item.y + bob);
       ctx.fillStyle = '#ff5cbb';
       ctx.strokeStyle = '#151329';
-      ctx.lineWidth = 2;
-      ctx.fillRect(-6, -6, 12, 12);
-      ctx.strokeRect(-6, -6, 12, 12);
+      ctx.lineWidth = 2.5;
+      ctx.fillRect(-8, -8, 16, 16);
+      ctx.strokeRect(-8, -8, 16, 16);
       ctx.fillStyle = '#b9ff66';
-      ctx.fillRect(2, -10, 5, 4);
+      ctx.fillRect(3, -13, 6, 5);
       ctx.restore();
     };
     const render = (now: number) => {
@@ -2359,19 +2359,19 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
       state.history.forEach((point, index) => {
         const tone = index % 4 === 0 ? '#42dcff' : index % 4 === 1 ? '#ff5cbb' : '#b9ff66';
         ctx.fillStyle = tone;
-        ctx.fillRect(point.x - 6, point.y - 6, 12, 12);
+        ctx.fillRect(point.x - 8, point.y - 8, 16, 16);
         ctx.fillStyle = 'rgba(21, 19, 41, .55)';
-        ctx.fillRect(point.x - 2, point.y - 2, 4, 4);
+        ctx.fillRect(point.x - 3, point.y - 3, 6, 6);
       });
       ctx.restore();
       ctx.save();
       ctx.fillStyle = '#ffd84d';
       ctx.strokeStyle = '#151329';
-      ctx.lineWidth = 3;
-      ctx.fillRect(state.head.x - 8, state.head.y - 8, 16, 16);
-      ctx.strokeRect(state.head.x - 8, state.head.y - 8, 16, 16);
+      ctx.lineWidth = 4;
+      ctx.fillRect(state.head.x - 10, state.head.y - 10, 20, 20);
+      ctx.strokeRect(state.head.x - 10, state.head.y - 10, 20, 20);
       ctx.fillStyle = '#151329';
-      ctx.fillRect(state.head.x + state.direction.x * 2 - 3, state.head.y + state.direction.y * 2 - 3, 3, 3);
+      ctx.fillRect(state.head.x + state.direction.x * 3 - 4, state.head.y + state.direction.y * 3 - 4, 4, 4);
       ctx.restore();
     };
     const frame = (now: number) => {
