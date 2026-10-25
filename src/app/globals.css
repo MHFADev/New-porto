@@ -557,11 +557,20 @@ h1, h2, h3 { text-wrap: balance; }
 .world-card-copy h3 { text-wrap: balance; }
 .project-row .project-tech-chip { min-height: 2.35rem; }
 .project-row:hover .project-number { transform: rotate(0deg) translateY(-2px); }
+.project-copy { position: relative; }
+.project-copy::before { content: ""; position: absolute; left: 0; top: .35rem; bottom: .35rem; width: 2px; background: color-mix(in srgb, var(--color-cyan) 58%, transparent); opacity: .55; }
 .world-card-copy { background: color-mix(in srgb, var(--color-surface-container) 92%, var(--scene-accent) 8%); }
 .world-card-copy h3 { max-width: 18ch; }
 .contact-card { isolation: isolate; }
 
+@media (min-width: 1024px) {
+  .project-copy { padding: 1.5rem 0 1.5rem 1.5rem; }
+  .project-copy-reverse { padding-left: 0; padding-right: 1.5rem; }
+  .project-copy-reverse::before { left: auto; right: 0; background: color-mix(in srgb, var(--color-pink) 58%, transparent); }
+}
+
 @media (max-width: 640px) {
   .section-index { min-width: 2.2rem; height: 2rem; }
   .world-card-copy h3 { max-width: 15ch; }
+  .project-copy { padding-left: 1rem; }
 }

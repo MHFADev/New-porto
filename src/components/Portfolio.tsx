@@ -1719,7 +1719,7 @@ function Projects() {
                 </Tilt>
               </div>
 
-              <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
+              <div className={`project-copy ${i % 2 === 1 ? 'lg:order-1 project-copy-reverse' : ''}`}>
                 <div className="flex items-center gap-4 font-mono text-[11px] font-bold tracking-[0.2em] text-on-surface-variant/70 mb-5">
                   <span className="project-number">{String(i + 1).padStart(2, '0')}</span>
                   <span className="h-px w-10 bg-line-strong" aria-hidden="true" />
