@@ -573,7 +573,7 @@ h1, h2, h3 { text-wrap: balance; }
 .contribution-cell:hover { transform: scale(1.35); border-color: var(--color-cotton); }
 .physics-wrapper-stage { position: relative; width: 100%; min-height: 18rem; perspective: 1100px; }
 .physics-wrapper-body { position: absolute; top: 0; left: 0; z-index: 2; width: 100%; transform-origin: center center; will-change: transform; }
-.physics-floor { position: absolute; right: -4vw; bottom: 1rem; left: -4vw; z-index: 1; height: 2px; background: linear-gradient(90deg, transparent, var(--color-line-strong) 12%, var(--color-primary-container) 50%, var(--color-line-strong) 88%, transparent); opacity: .7; }
+.physics-floor { position: absolute; top: var(--physics-floor-y, 18rem); right: -4vw; left: -4vw; z-index: 1; height: 2px; background: linear-gradient(90deg, transparent, var(--color-line-strong) 12%, var(--color-primary-container) 50%, var(--color-line-strong) 88%, transparent); opacity: .7; }
 .physics-floor::after { content: "FLOOR BOUNDARY"; position: absolute; right: 10%; top: .55rem; color: var(--color-on-surface-variant); font: 700 .55rem/1 var(--font-jet); letter-spacing: .16em; opacity: .48; }
 .physics-screw { position: absolute; z-index: 4; display: grid; width: 2.35rem; height: 2.35rem; place-items: center; border: 3px solid var(--color-ink); border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--color-cotton), var(--color-line-strong) 55%, var(--color-ink)); color: var(--color-ink); box-shadow: 3px 4px 0 var(--color-ink); cursor: pointer; transition: opacity .6s ease-in-out, transform .6s ease-in-out, filter .3s ease; }
 .physics-screw:hover { filter: brightness(1.18); }

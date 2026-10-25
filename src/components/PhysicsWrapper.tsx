@@ -38,7 +38,9 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
       if (!width || !height) return;
       let physicsWidth = width;
       let physicsHeight = height;
-      stage.style.minHeight = `${height + 72}px`;
+      const floorGap = window.innerWidth >= 1024 ? 240 : 112;
+      stage.style.minHeight = `${height + floorGap + 40}px`;
+      stage.style.setProperty('--physics-floor-y', `${height + floorGap}px`);
 
       const engine = Matter.Engine.create({ enableSleeping: false });
       engine.gravity.y = 1;
@@ -51,7 +53,7 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
         density: 0.002,
         chamfer: { radius: 18 },
       });
-      const floor = Matter.Bodies.rectangle(width / 2, height + 22, width * 1.6, 36, {
+      const floor = Matter.Bodies.rectangle(width / 2, height + floorGap, width * 1.6, 36, {
         isStatic: true,
         restitution: 0.5,
         friction: 0.1,
@@ -85,7 +87,7 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
         const tx = x - physicsWidth / 2;
         const ty = y - physicsHeight / 2;
         bodyElement.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) rotate(${body.angle.toFixed(4)}rad)`;
-        const drop = Math.max(0, Math.min(1, ty / 72));
+        const drop = Math.max(0, Math.min(1, ty / floorGap));
         bodyElement.style.filter = `drop-shadow(0 ${8 + drop * 10}px ${drop * 12}px rgba(21, 19, 41, ${0.2 + drop * 0.28}))`;
         raf = window.requestAnimationFrame(sync);
       };
@@ -98,7 +100,7 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
         const scaleX = nextWidth / physicsWidth;
         const scaleY = nextHeight / physicsHeight;
         Matter.Body.scale(body, scaleX, scaleY);
-        Matter.Body.setPosition(floor, { x: nextWidth / 2, y: nextHeight + 22 });
+        Matter.Body.setPosition(floor, { x: nextWidth / 2, y: nextHeight + floorGap });
         const nextAnchors = [
           { x: 0, y: 0 }, { x: nextWidth, y: 0 },
           { x: 0, y: nextHeight }, { x: nextWidth, y: nextHeight },
@@ -115,7 +117,8 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
         });
         physicsWidth = nextWidth;
         physicsHeight = nextHeight;
-        stage.style.minHeight = `${nextHeight + 72}px`;
+        stage.style.minHeight = `${nextHeight + floorGap + 40}px`;
+        stage.style.setProperty('--physics-floor-y', `${nextHeight + floorGap}px`);
       });
       observer.observe(stage);
 
