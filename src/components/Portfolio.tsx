@@ -913,51 +913,6 @@ function FlipText({
   );
 }
 
-function ImageReveal({
-  children,
-  className,
-  delay = 0,
-}: {
-  children: ReactNode;
-  className?: string;
-  delay?: number;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || reduced) return;
-    el.style.clipPath = 'circle(0% at 50% 50%)';
-    let anim: JSAnimation | null = null;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !anim) {
-          anim = animate(el, {
-            clipPath: ['circle(0% at 50% 50%)', 'circle(75% at 50% 50%)'],
-            duration: 1200,
-            delay,
-            ease: 'outExpo',
-          });
-          io.disconnect();
-        }
-      },
-      { threshold: 0.15 }
-    );
-    io.observe(el);
-    return () => {
-      io.disconnect();
-      anim?.pause();
-    };
-  }, [delay, reduced]);
-
-  return (
-    <div ref={ref} className={className} style={{ willChange: 'clip-path' }}>
-      {children}
-    </div>
-  );
-}
-
 function AnimatedRays({ className }: { className?: string }) {
   return (
     <div
