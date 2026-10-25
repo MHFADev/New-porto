@@ -571,6 +571,22 @@ h1, h2, h3 { text-wrap: balance; }
 .contribution-cell[data-level="3"] { background: color-mix(in srgb, var(--color-pink) 72%, var(--color-surface-container)); }
 .contribution-cell[data-level="4"] { background: var(--color-lime); border-color: var(--color-ink); }
 .contribution-cell:hover { transform: scale(1.35); border-color: var(--color-cotton); }
+.physics-wrapper-stage { position: relative; width: 100%; min-height: 18rem; perspective: 1100px; }
+.physics-wrapper-body { position: absolute; top: 0; left: 0; z-index: 2; width: 100%; transform-origin: center center; will-change: transform; }
+.physics-floor { position: absolute; right: -4vw; bottom: 1rem; left: -4vw; z-index: 1; height: 2px; background: linear-gradient(90deg, transparent, var(--color-line-strong) 12%, var(--color-primary-container) 50%, var(--color-line-strong) 88%, transparent); opacity: .7; }
+.physics-floor::after { content: "FLOOR BOUNDARY"; position: absolute; right: 10%; top: .55rem; color: var(--color-on-surface-variant); font: 700 .55rem/1 var(--font-jet); letter-spacing: .16em; opacity: .48; }
+.physics-screw { position: absolute; z-index: 4; display: grid; width: 2.35rem; height: 2.35rem; place-items: center; border: 3px solid var(--color-ink); border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--color-cotton), var(--color-line-strong) 55%, var(--color-ink)); box-shadow: 3px 4px 0 var(--color-ink); cursor: pointer; transition: opacity .65s ease, transform .95s cubic-bezier(.2,.8,.2,1), filter .3s ease; }
+.physics-screw:hover { filter: brightness(1.18); }
+.physics-screw:focus-visible { outline: 3px solid var(--color-cyan); outline-offset: 4px; }
+.physics-screw-0 { top: -.95rem; left: -.95rem; }
+.physics-screw-1 { top: -.95rem; right: -.95rem; }
+.physics-screw-2 { bottom: -.95rem; left: -.95rem; }
+.physics-screw-3 { right: -.95rem; bottom: -.95rem; }
+.physics-screw-cross,
+.physics-screw-cross::after { width: 1rem; height: .18rem; border-radius: 99px; background: var(--color-ink); content: ""; }
+.physics-screw-cross::after { display: block; transform: rotate(90deg); }
+.physics-screw.is-released { opacity: 0; pointer-events: none; transform: translateY(1.4rem) rotate(720deg) scale(.45); }
+.physics-hint { position: absolute; right: 1rem; bottom: 1.7rem; z-index: 3; color: var(--color-on-surface-variant); font: 700 .55rem/1 var(--font-jet); letter-spacing: .14em; opacity: .45; pointer-events: none; }
 
 @media (min-width: 1024px) {
   .project-copy { padding: 1.5rem 0 1.5rem 1.5rem; }
@@ -583,4 +599,11 @@ h1, h2, h3 { text-wrap: balance; }
   .world-card-copy h3 { max-width: 15ch; }
   .project-copy { padding-left: 1rem; }
   .contribution-panel { box-shadow: 6px 8px 0 var(--color-ink); }
+  .physics-wrapper-stage { min-height: 22rem; }
+  .physics-screw { width: 2rem; height: 2rem; }
+  .physics-screw-0 { left: -.7rem; }
+  .physics-screw-1 { right: -.7rem; }
+  .physics-screw-2 { left: -.7rem; }
+  .physics-screw-3 { right: -.7rem; }
+  .physics-hint { right: .25rem; font-size: .48rem; }
 }

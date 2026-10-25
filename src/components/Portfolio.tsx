@@ -8,6 +8,7 @@ import { animate, onScroll, stagger } from 'animejs';
 import type { JSAnimation, ScrollObserver } from 'animejs';
 import { DEFAULT_PROFILE } from '@/lib/profile';
 import type { Profile } from '@/lib/profile';
+import PhysicsWrapper from '@/components/PhysicsWrapper';
 
 const NAV = [
   { label: 'About', href: '#about' },
@@ -1618,7 +1619,8 @@ function GitHubContributions({ profile }: { profile: Profile }) {
     <section id="contributions" className="relative border-y border-line-strong bg-surface-container/25 scroll-mt-16">
       <div className="mx-auto max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
         <SectionHeading index="03" kicker="GitHub activity" title="Built in public, one commit at a time." gradient={['public']} />
-        <div className="contribution-panel rounded-[1.75rem] border-[3px] border-ink bg-surface-container/80 p-5 sm:p-8">
+        <PhysicsWrapper>
+          <div className="contribution-panel rounded-[1.75rem] border-[3px] border-ink bg-surface-container/80 p-5 sm:p-8">
           <div className="flex flex-col gap-5 border-b border-line-strong pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="flex items-center gap-3 font-mono text-[10px] font-bold tracking-[.18em] text-cyan uppercase">
@@ -1653,11 +1655,12 @@ function GitHubContributions({ profile }: { profile: Profile }) {
           ) : (
             <div className="mt-7 flex min-h-28 items-center justify-center rounded-xl border border-dashed border-line-strong font-mono text-xs text-on-surface-variant/65">{error ? 'GITHUB ACTIVITY TEMPORARILY UNAVAILABLE' : 'LOADING GITHUB ACTIVITY…'}</div>
           )}
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-4 text-[10px] font-mono font-bold tracking-[.12em] text-on-surface-variant/65 uppercase">
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-4 text-[10px] font-mono font-bold tracking-[.12em] text-on-surface-variant/65 uppercase">
             <span>{data ? `Synced ${new Date(data.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}` : 'Syncing with GitHub'}</span>
             <a href={profile.github} target="_blank" rel="noreferrer" className="font-black text-cyan underline decoration-cyan/40 underline-offset-4 hover:text-cotton">Open GitHub profile ↗</a>
+            </div>
           </div>
-        </div>
+        </PhysicsWrapper>
       </div>
     </section>
   );
