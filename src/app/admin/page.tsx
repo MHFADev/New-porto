@@ -599,8 +599,9 @@ function ProjectEditor({ index, project, iconMap, onChange, onPickIcons, onDelet
         </div>
         <div className="space-y-5 p-5 sm:p-7">
           <label className="block">
-            <span className="mb-2 block font-mono text-[10px] font-bold tracking-[.16em] text-on-surface-variant">JUDUL PROJECT</span>
+            <span className="mb-2 block font-mono text-[10px] font-bold tracking-[.16em] text-on-surface-variant">NAMA / JUDUL YANG TAMPIL DI WEBSITE</span>
             <input value={project.title} onChange={(event) => onChange({ title: event.target.value })} placeholder={project.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ')} className="w-full rounded-xl border border-line-strong bg-surface px-4 py-3 font-display text-lg font-bold text-cotton placeholder:text-on-surface-variant/40 focus:border-cyan focus:outline-none" />
+            <p className="mt-2 text-xs leading-relaxed text-on-surface-variant/65">Nama file storage tetap aman sebagai identifier. Isi field ini untuk mengganti nama project yang tampil di bagian Selected work dan data project publik.</p>
           </label>
           <label className="block">
             <span className="mb-2 block font-mono text-[10px] font-bold tracking-[.16em] text-on-surface-variant">DESKRIPSI</span>

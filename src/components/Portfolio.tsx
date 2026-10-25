@@ -1723,7 +1723,7 @@ function Projects() {
                 <div className="flex items-center gap-4 font-mono text-[11px] font-bold tracking-[0.2em] text-on-surface-variant/70 mb-5">
                   <span className="project-number">{String(i + 1).padStart(2, '0')}</span>
                   <span className="h-px w-10 bg-line-strong" aria-hidden="true" />
-                  <span>{p.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, '_').toLowerCase()}</span>
+                  <span>{p.title || toTitle(p.name)}</span>
                 </div>
                 <h3 className="font-display font-black tracking-[-0.035em] text-3xl sm:text-4xl text-cotton mb-4">
                   {p.title || toTitle(p.name)}
