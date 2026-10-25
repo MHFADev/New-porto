@@ -15,15 +15,19 @@ export type Meta = {
 export type RepoConfig = { owner: string; repo: string; pat: string };
 
 export function imageRepoConfig(): RepoConfig | null {
-  const url = process.env.IMAGE_REPO_URL;
-  const pat = process.env.IMAGE_REPO_PAT;
-  const m = url?.match(/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/);
+  const url = process.env.IMAGE_REPO_URL?.trim().replace(/^['"]|['"]$/g, '');
+  const pat = process.env.IMAGE_REPO_PAT?.trim().replace(/^['"]|['"]$/g, '');
+  const m = url?.match(/github\.com\/([^/]+)\/([^/?#]+?)(?:\.git)?(?:[/?#].*)?$/i);
   if (!url || !pat || !m) return null;
   return { owner: m[1], repo: m[2], pat };
 }
 
 export function projectPath() {
-  return process.env.IMAGE_PROJECT_PATH?.replace(/^\/+|\/+$/g, '') || 'project';
+  const configured = process.env.IMAGE_PROJECT_PATH?.trim().replace(/^['"]|['"]$/g, '');
+  if (configured) return configured.replace(/^\/+|\/+$/g, '');
+  const url = process.env.IMAGE_REPO_URL?.trim();
+  const folderFromUrl = url?.match(/\/tree\/[^/]+\/(.+?)(?:[?#].*)?\/?$/i)?.[1];
+  return folderFromUrl ? decodeURIComponent(folderFromUrl).replace(/^\/+|\/+$/g, '') : 'project';
 }
 
 function headers(cfg: RepoConfig, accept: string) {
@@ -51,14 +55,19 @@ export async function readMeta(): Promise<Meta> {
   if (!cfg) return { projects: {}, certificates: {}, techStack: [], profile: DEFAULT_PROFILE };
   const res = await githubFetch(cfg, `${projectPath()}/meta.json`, 'json');
   if (!res.ok) return { projects: {}, certificates: {}, techStack: [], profile: DEFAULT_PROFILE };
-  const data = (await res.json()) as { content: string };
-  const parsed = JSON.parse(Buffer.from(data.content, 'base64').toString('utf8')) as Partial<Meta>;
-  return {
-    projects: parsed.projects ?? {},
-    certificates: parsed.certificates ?? {},
-    techStack: Array.isArray(parsed.techStack) ? parsed.techStack : [],
-    profile: normalizeProfile(parsed.profile),
-  };
+  try {
+    const data = (await res.json()) as { content?: string };
+    if (!data.content) return { projects: {}, certificates: {}, techStack: [], profile: DEFAULT_PROFILE };
+    const parsed = JSON.parse(Buffer.from(data.content, 'base64').toString('utf8')) as Partial<Meta>;
+    return {
+      projects: parsed.projects ?? {},
+      certificates: parsed.certificates ?? {},
+      techStack: Array.isArray(parsed.techStack) ? parsed.techStack : [],
+      profile: normalizeProfile(parsed.profile),
+    };
+  } catch {
+    return { projects: {}, certificates: {}, techStack: [], profile: DEFAULT_PROFILE };
+  }
 }
 
 export async function writeMeta(meta: Meta) {
