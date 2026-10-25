@@ -1715,7 +1715,8 @@ function Certificates() {
   if (certificates?.length === 0) return null;
   return (
     <section id="certificates" className="relative border-y border-line-strong bg-surface-container/25 scroll-mt-16">
-      <div className="mx-auto max-w-6xl px-5 py-28 sm:px-8 sm:py-36">
+      <SnakeBackdrop variant="certificates" />
+      <div className="relative z-10 mx-auto max-w-6xl px-5 py-28 sm:px-8 sm:py-36">
         <SectionHeading index="04" kicker="Credentials" title="Proof behind the practice." gradient={['practice']} />
         <p className="mb-12 max-w-xl text-base leading-relaxed text-on-surface-variant sm:text-lg">A compact record of the courses and certifications that keep the work grounded in real systems, not just polished screens.</p>
         {certificates === null ? <div className="py-10 font-mono text-xs text-on-surface-variant/60">LOADING CREDENTIALS…</div> : <div className="grid gap-5 md:grid-cols-2">{certificates.map((certificate, index) => {
@@ -1761,6 +1762,7 @@ function Projects() {
 
   return (
     <section id="projects" className="relative mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-36 scroll-mt-16">
+      <SnakeBackdrop variant="projects" />
         <SectionHeading
         index="05"
         kicker="Selected work"
@@ -2284,158 +2286,45 @@ function ScrollChrome() {
   );
 }
 
-function SnakeAccessory({ reduced }: { reduced: boolean }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || reduced) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const cell = 42;
-    const state = {
-      head: { x: 4 * cell, y: 6 * cell },
-      direction: { x: 1, y: 0 },
-      history: [] as { x: number; y: number }[],
-      food: [] as { x: number; y: number; phase: number }[],
-      turnAt: 0,
-      nextFood: 0,
-      evolution: 0,
-    };
-    let width = 0;
-    let height = 0;
-    let raf = 0;
-    let last = 0;
-    const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      state.head.x = Math.min(state.head.x, Math.max(cell, width - cell));
-      state.head.y = Math.min(state.head.y, Math.max(cell, height - cell));
-      if (!state.food.length) {
-        state.food = [
-          { x: Math.round(width * .68 / cell) * cell, y: Math.round(height * .27 / cell) * cell, phase: 0 },
-          { x: Math.round(width * .28 / cell) * cell, y: Math.round(height * .74 / cell) * cell, phase: 1.7 },
-          { x: Math.round(width * .82 / cell) * cell, y: Math.round(height * .78 / cell) * cell, phase: 3.2 },
-        ];
-      }
-    };
-    const turn = () => {
-      const horizontal = state.direction.x !== 0;
-      state.direction = horizontal
-        ? (state.head.y < height * .52 ? { x: 0, y: 1 } : { x: 0, y: -1 })
-        : (state.head.x < width * .52 ? { x: 1, y: 0 } : { x: -1, y: 0 });
-    };
-    const spawnFood = () => {
-      const slot = state.nextFood++ % 5;
-      state.food.push({
-        x: Math.round((width * (.18 + slot * .16)) / cell) * cell,
-        y: Math.round((height * (slot % 2 ? .72 : .32)) / cell) * cell,
-        phase: slot * .8,
-      });
-    };
-    const drawFood = (item: { x: number; y: number; phase: number }, now: number) => {
-      const bob = Math.sin(now / 420 + item.phase) * 2;
-      ctx.save();
-      ctx.translate(item.x, item.y + bob);
-      ctx.fillStyle = '#ff5cbb';
-      ctx.strokeStyle = '#151329';
-      ctx.lineWidth = 3;
-      ctx.fillRect(-13, -13, 26, 26);
-      ctx.strokeRect(-13, -13, 26, 26);
-      ctx.fillStyle = '#b9ff66';
-      ctx.fillRect(5, -20, 9, 7);
-      ctx.restore();
-    };
-    const render = (now: number) => {
-      ctx.clearRect(0, 0, width, height);
-      state.food.forEach((item) => drawFood(item, now));
-      const stage = Math.min(4, state.evolution);
-      const bodyColors = stage >= 3 ? ['#42dcff', '#ff5cbb', '#b9ff66', '#ffd84d'] : ['#42dcff', '#ff5cbb', '#b9ff66'];
-      ctx.save();
-      ctx.globalAlpha = .72;
-      ctx.lineWidth = 18 + stage * 4;
-      ctx.lineCap = 'square';
-      ctx.lineJoin = 'miter';
-      ctx.strokeStyle = bodyColors[0];
-      if (state.history.length > 1) {
-        ctx.beginPath();
-        ctx.moveTo(state.head.x, state.head.y);
-        state.history.forEach((point) => ctx.lineTo(point.x, point.y));
-        ctx.stroke();
-      }
-      state.history.forEach((point, index) => {
-        const tone = bodyColors[index % bodyColors.length];
-        ctx.fillStyle = tone;
-        ctx.fillRect(point.x - 14, point.y - 14, 28, 28);
-        ctx.fillStyle = 'rgba(21, 19, 41, .55)';
-        ctx.fillRect(point.x - 5, point.y - 5, 10, 10);
-        if (stage >= 2 && index % 3 === 0) {
-          ctx.fillStyle = stage >= 4 ? '#ffd84d' : '#ff5cbb';
-          ctx.fillRect(point.x - 19, point.y - 5, 6, 10);
-        }
-      });
-      ctx.restore();
-      ctx.save();
-      ctx.fillStyle = stage >= 3 ? '#ff5cbb' : '#ffd84d';
-      ctx.strokeStyle = '#151329';
-      ctx.lineWidth = 5;
-      ctx.fillRect(state.head.x - 18, state.head.y - 18, 36, 36);
-      ctx.strokeRect(state.head.x - 18, state.head.y - 18, 36, 36);
-      if (stage >= 1) {
-        ctx.fillStyle = '#b9ff66';
-        ctx.fillRect(state.head.x - 22, state.head.y - 21, 8, 8);
-        ctx.fillRect(state.head.x + 14, state.head.y - 21, 8, 8);
-      }
-      if (stage >= 3) {
-        ctx.fillStyle = '#42dcff';
-        ctx.fillRect(state.head.x - 7, state.head.y - 27, 14, 8);
-      }
-      ctx.fillStyle = '#151329';
-      ctx.fillRect(state.head.x + state.direction.x * 6 - 6, state.head.y + state.direction.y * 6 - 6, 6, 6);
-      if (stage >= 2) {
-        ctx.fillStyle = '#ff5cbb';
-        ctx.fillRect(state.head.x + state.direction.x * 20 - 3, state.head.y + state.direction.y * 20 - 3, 8, 6);
-      }
-      ctx.restore();
-    };
-    const frame = (now: number) => {
-      if (!last) last = now;
-      const tick = Math.max(68, 105 - state.evolution * 6);
-      if (now - last > tick) {
-        last = now;
-        state.head.x += state.direction.x * cell;
-        state.head.y += state.direction.y * cell;
-        state.history.unshift({ ...state.head });
-        state.history.length = Math.min(state.history.length, 24 + Math.min(state.evolution * 5, 40));
-        if (state.head.x < cell || state.head.x > width - cell || state.head.y < cell || state.head.y > height - cell) turn();
-        if (now > state.turnAt) { state.turnAt = now + 1250; turn(); }
-        state.food = state.food.filter((item) => {
-          const eaten = Math.abs(item.x - state.head.x) < cell && Math.abs(item.y - state.head.y) < cell;
-          if (eaten) {
-            state.evolution += 1;
-            spawnFood();
-            if (state.evolution % 2 === 0) spawnFood();
-          }
-          return !eaten;
-        });
-      }
-      render(now);
-      raf = requestAnimationFrame(frame);
-    };
-    resize();
-    window.addEventListener('resize', resize);
-    raf = requestAnimationFrame(frame);
-    return () => { window.removeEventListener('resize', resize); cancelAnimationFrame(raf); };
-  }, [reduced]);
-
-  if (reduced) return null;
-  return <canvas ref={canvasRef} className="snake-accessory" aria-hidden="true" />;
+function SnakeBackdrop({ variant }: { variant: 'certificates' | 'projects' }) {
+  const id = variant === 'certificates' ? 'snake-certificates' : 'snake-projects';
+  const path = variant === 'certificates'
+    ? 'M 1080 72 C 925 10 770 58 760 178 C 750 294 930 304 954 418 C 977 525 820 594 677 535 C 546 482 575 352 690 330 C 805 308 842 410 763 456 C 690 498 605 465 548 408'
+    : 'M 90 570 C 218 502 172 380 275 318 C 375 259 522 303 520 194 C 518 92 384 68 302 126 C 210 191 276 292 390 292 C 535 292 626 202 762 232 C 915 266 1001 426 1115 484';
+  const head = variant === 'certificates'
+    ? { x: 1080, y: 72, rotate: 24 }
+    : { x: 90, y: 570, rotate: -28 };
+  return (
+    <div className={`snake-backdrop snake-backdrop-${variant}`} aria-hidden="true">
+      <svg viewBox="0 0 1200 620" preserveAspectRatio="none" className="h-full w-full">
+        <defs>
+          <linearGradient id={`${id}-body`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#42dcff" />
+            <stop offset=".48" stopColor="#ff5cbb" />
+            <stop offset="1" stopColor="#b9ff66" />
+          </linearGradient>
+          <filter id={`${id}-glow`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="13" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <path d={path} fill="none" stroke="#151329" strokeWidth="76" strokeLinecap="round" strokeLinejoin="round" opacity=".72" />
+        <path d={path} fill="none" stroke={`url(#${id}-body)`} strokeWidth="58" strokeLinecap="round" strokeLinejoin="round" opacity=".78" filter={`url(#${id}-glow)`} />
+        <path d={path} fill="none" stroke="#fff" strokeWidth="6" strokeLinecap="round" strokeDasharray="2 34" opacity=".25" />
+        <g transform={`translate(${head.x} ${head.y}) rotate(${head.rotate})`}>
+          <ellipse rx="54" ry="42" fill="#151329" opacity=".9" />
+          <ellipse rx="45" ry="34" fill="#ff5cbb" stroke="#b9ff66" strokeWidth="5" />
+          <path d="M -35 10 Q 0 34 35 10" fill="none" stroke="#151329" strokeWidth="5" strokeLinecap="round" />
+          <ellipse cx="-19" cy="-9" rx="8" ry="10" fill="#b9ff66" stroke="#151329" strokeWidth="4" />
+          <ellipse cx="19" cy="-9" rx="8" ry="10" fill="#b9ff66" stroke="#151329" strokeWidth="4" />
+          <circle cx="-19" cy="-10" r="3" fill="#151329" />
+          <circle cx="19" cy="-10" r="3" fill="#151329" />
+          <path d="M -10 28 L 0 42 L 10 28" fill="#42dcff" stroke="#151329" strokeWidth="4" strokeLinejoin="round" />
+          <path d="M -5 40 L -15 53 M 5 40 L 15 53" stroke="#ff5cbb" strokeWidth="4" strokeLinecap="round" />
+        </g>
+      </svg>
+    </div>
+  );
 }
 
 export default function Portfolio() {
@@ -2486,7 +2375,6 @@ export default function Portfolio() {
       <ScrollChrome />
       <SectionRail />
       <div className="fixed inset-0 pointer-events-none z-[1] grain" aria-hidden="true" />
-      <SnakeAccessory reduced={reduced} />
       <Navbar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
 
       <main className="relative z-10">
