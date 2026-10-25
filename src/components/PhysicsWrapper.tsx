@@ -38,7 +38,7 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
       if (!width || !height) return;
       let physicsWidth = width;
       let physicsHeight = height;
-      const floorGap = window.innerWidth >= 1024 ? 240 : 112;
+      const floorGap = window.innerWidth >= 1024 ? 166 : 112;
       stage.style.minHeight = `${height + floorGap + 40}px`;
       stage.style.setProperty('--physics-floor-y', `${height + floorGap}px`);
 
@@ -62,8 +62,8 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
       const anchors = [
         { x: 0, y: 0 },
         { x: width, y: 0 },
-        { x: 0, y: height },
-        { x: width, y: height },
+        { x: 0, y: height + floorGap },
+        { x: width, y: height + floorGap },
       ];
       const localPoints = [
         { x: -width / 2, y: -height / 2 },
@@ -77,7 +77,7 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
         pointB: anchor,
         stiffness: 0.48,
         damping: 0.045,
-        length: 0,
+        length: index >= 2 ? floorGap : 0,
       }));
       Matter.Composite.add(engine.world, [body, floor, ...constraints]);
       Matter.Runner.run(runner, engine);
@@ -103,7 +103,7 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
         Matter.Body.setPosition(floor, { x: nextWidth / 2, y: nextHeight + floorGap });
         const nextAnchors = [
           { x: 0, y: 0 }, { x: nextWidth, y: 0 },
-          { x: 0, y: nextHeight }, { x: nextWidth, y: nextHeight },
+          { x: 0, y: nextHeight + floorGap }, { x: nextWidth, y: nextHeight + floorGap },
         ];
         const nextLocalPoints = [
           { x: -nextWidth / 2, y: -nextHeight / 2 },

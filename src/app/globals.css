@@ -580,8 +580,8 @@ h1, h2, h3 { text-wrap: balance; }
 .physics-screw:focus-visible { outline: 3px solid var(--color-cyan); outline-offset: 4px; }
 .physics-screw-0 { top: -.95rem; left: -.95rem; }
 .physics-screw-1 { top: -.95rem; right: -.95rem; }
-.physics-screw-2 { bottom: -.95rem; left: -.95rem; }
-.physics-screw-3 { right: -.95rem; bottom: -.95rem; }
+.physics-screw-2 { top: calc(var(--physics-floor-y, 18rem) - 1.18rem); bottom: auto; left: -.95rem; }
+.physics-screw-3 { top: calc(var(--physics-floor-y, 18rem) - 1.18rem); right: -.95rem; bottom: auto; }
 .physics-screw-icon { width: 1.45rem; height: 1.45rem; }
 .physics-screw[data-turns="1"] { transform: rotate(110deg); }
 .physics-screw[data-turns="2"] { transform: rotate(220deg); }
@@ -606,7 +606,7 @@ h1, h2, h3 { text-wrap: balance; }
   .physics-screw { width: 2rem; height: 2rem; }
   .physics-screw-0 { left: -.7rem; }
   .physics-screw-1 { right: -.7rem; }
-  .physics-screw-2 { left: -.7rem; }
-  .physics-screw-3 { right: -.7rem; }
+  .physics-screw-2 { top: calc(var(--physics-floor-y, 22rem) - 1rem); left: -.7rem; }
+  .physics-screw-3 { top: calc(var(--physics-floor-y, 22rem) - 1rem); right: -.7rem; }
   .physics-hint { right: .25rem; font-size: .48rem; }
 }
