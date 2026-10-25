@@ -12,6 +12,7 @@ import type { Profile } from '@/lib/profile';
 const NAV = [
   { label: 'About', href: '#about' },
   { label: 'Skills', href: '#skills' },
+  { label: 'Activity', href: '#contributions' },
   { label: 'Certificates', href: '#certificates' },
   { label: 'Work', href: '#projects' },
   { label: 'Journey', href: '#story' },
@@ -1585,6 +1586,83 @@ function toTitle(name: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+type ContributionCell = { date: string; level: number; week: number; day: number };
+type ContributionData = { username: string; total: number | null; updatedAt: string; cells: ContributionCell[] };
+
+function GitHubContributions({ profile }: { profile: Profile }) {
+  const [data, setData] = useState<ContributionData | null>(null);
+  const [error, setError] = useState(false);
+  const username = profile.github.split('/').filter(Boolean).pop() || 'MHFADev';
+
+  useEffect(() => {
+    let live = true;
+    const load = () => {
+      fetch(`/api/github/contributions?username=${encodeURIComponent(username)}`, { cache: 'no-store' })
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error('contribution request failed')))
+        .then((next) => {
+          if (!live) return;
+          setData(next as ContributionData);
+          setError(false);
+        })
+        .catch(() => live && setError(true));
+    };
+    load();
+    const timer = window.setInterval(load, 5 * 60 * 1000);
+    return () => {
+      live = false;
+      window.clearInterval(timer);
+    };
+  }, [username]);
+
+  return (
+    <section id="contributions" className="relative border-y border-line-strong bg-surface-container/25 scroll-mt-16">
+      <div className="mx-auto max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
+        <SectionHeading index="03" kicker="GitHub activity" title="Built in public, one commit at a time." gradient={['public']} />
+        <div className="contribution-panel rounded-[1.75rem] border-[3px] border-ink bg-surface-container/80 p-5 sm:p-8">
+          <div className="flex flex-col gap-5 border-b border-line-strong pb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="flex items-center gap-3 font-mono text-[10px] font-bold tracking-[.18em] text-cyan uppercase">
+                <GitHubIcon className="h-4 w-4" />
+                <span>{data?.username ?? username}</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-lime" aria-hidden="true" />
+                <span>LIVE CALENDAR</span>
+              </div>
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-surface-variant">Kontribusi publik dari GitHub, diperbarui otomatis setiap lima menit saat halaman ini terbuka.</p>
+            </div>
+            <div className="shrink-0 text-left sm:text-right">
+              <div className="font-display text-4xl font-black text-cotton">{data?.total?.toLocaleString('id-ID') ?? '—'}</div>
+              <div className="font-mono text-[10px] font-bold tracking-[.16em] text-on-surface-variant/65 uppercase">contributions / last year</div>
+            </div>
+          </div>
+          {data ? (
+            <div className="contribution-scroll mt-7" aria-label={`GitHub contribution calendar for ${data.username}`}>
+              <div className="contribution-grid" role="grid" aria-label="GitHub contribution levels">
+                {data.cells.map((cell) => (
+                  <span
+                    key={cell.date}
+                    role="gridcell"
+                    aria-label={`${cell.date}, activity level ${cell.level} of 4`}
+                    title={`${cell.date} · activity level ${cell.level} of 4`}
+                    data-level={cell.level}
+                    className="contribution-cell"
+                    style={{ gridColumn: cell.week + 1, gridRow: cell.day + 1 }}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-7 flex min-h-28 items-center justify-center rounded-xl border border-dashed border-line-strong font-mono text-xs text-on-surface-variant/65">{error ? 'GITHUB ACTIVITY TEMPORARILY UNAVAILABLE' : 'LOADING GITHUB ACTIVITY…'}</div>
+          )}
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-4 text-[10px] font-mono font-bold tracking-[.12em] text-on-surface-variant/65 uppercase">
+            <span>{data ? `Synced ${new Date(data.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}` : 'Syncing with GitHub'}</span>
+            <a href={profile.github} target="_blank" rel="noreferrer" className="font-black text-cyan underline decoration-cyan/40 underline-offset-4 hover:text-cotton">Open GitHub profile ↗</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 type ProjectIcon = { slug: string; label: string; url: string; hex?: string; category?: string };
 type Project = { name: string; url: string; title: string; desc: string; techStack: ProjectIcon[] };
 
@@ -1638,7 +1716,7 @@ function Certificates() {
   return (
     <section id="certificates" className="relative border-y border-line-strong bg-surface-container/25 scroll-mt-16">
       <div className="mx-auto max-w-6xl px-5 py-28 sm:px-8 sm:py-36">
-        <SectionHeading index="03" kicker="Credentials" title="Proof behind the practice." gradient={['practice']} />
+        <SectionHeading index="04" kicker="Credentials" title="Proof behind the practice." gradient={['practice']} />
         <p className="mb-12 max-w-xl text-base leading-relaxed text-on-surface-variant sm:text-lg">A compact record of the courses and certifications that keep the work grounded in real systems, not just polished screens.</p>
         {certificates === null ? <div className="py-10 font-mono text-xs text-on-surface-variant/60">LOADING CREDENTIALS…</div> : <div className="grid gap-5 md:grid-cols-2">{certificates.map((certificate, index) => {
           const isPdf = certificate.name.toLowerCase().endsWith('.pdf');
@@ -1683,8 +1761,8 @@ function Projects() {
 
   return (
     <section id="projects" className="relative mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-36 scroll-mt-16">
-      <SectionHeading
-        index="03"
+        <SectionHeading
+        index="05"
         kicker="Selected work"
         title="Things I&rsquo;ve shipped, lately."
         gradient={['lately']}
@@ -1963,7 +2041,7 @@ function WorldScroll() {
       <div ref={stickyRef} className="world-sticky sticky top-0 h-screen overflow-hidden flex items-center">
         <div className="absolute inset-0 world-grid pointer-events-none" aria-hidden="true" />
         <div className="absolute left-5 sm:left-8 top-24 z-20 flex items-center gap-4 font-mono text-[10px] sm:text-xs font-bold tracking-[0.22em] text-on-surface-variant">
-          <span className="text-yellow">04</span>
+          <span className="text-yellow">06</span>
           <span>SCROLL THE WORLD</span>
           <span className="hidden sm:block w-24 h-px bg-line-strong" />
         </div>
@@ -2053,7 +2131,7 @@ function Contact({ profile }: { profile: Profile }) {
     <section id="contact" className="relative border-t border-line-strong bg-surface-container/25 scroll-mt-16">
       <div className="mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-40">
         <SectionHeading
-          index="04"
+          index="07"
           kicker="Contact"
           title="Let&rsquo;s build something solid."
           useFlip
@@ -2261,6 +2339,7 @@ export default function Portfolio() {
         <Marquee items={MARQUEE_ITEMS} />
         <About profile={profile} />
         <Skills />
+        <GitHubContributions profile={profile} />
         <Certificates />
         <Projects />
         <WorldScroll />
