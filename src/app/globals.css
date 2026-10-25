@@ -571,17 +571,6 @@ h1, h2, h3 { text-wrap: balance; }
 .contribution-cell[data-level="3"] { background: color-mix(in srgb, var(--color-pink) 72%, var(--color-surface-container)); }
 .contribution-cell[data-level="4"] { background: var(--color-lime); border-color: var(--color-ink); }
 .contribution-cell:hover { transform: scale(1.35); border-color: var(--color-cotton); }
-.snake-backdrop { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; opacity: .5; mix-blend-mode: screen; }
-.snake-backdrop svg { display: block; width: 100%; height: 100%; transform: scale(1.04); transform-origin: center; }
-.snake-backdrop-certificates { top: 4%; bottom: 4%; }
-.snake-backdrop-projects { top: 7%; bottom: 3%; opacity: .44; }
-.project-row,
-.skill-card,
-.certificate-card,
-.fact-card,
-.contribution-panel,
-.contact-card,
-.world-card { position: relative; z-index: 12; }
 
 @media (min-width: 1024px) {
   .project-copy { padding: 1.5rem 0 1.5rem 1.5rem; }
@@ -594,6 +583,4 @@ h1, h2, h3 { text-wrap: balance; }
   .world-card-copy h3 { max-width: 15ch; }
   .project-copy { padding-left: 1rem; }
   .contribution-panel { box-shadow: 6px 8px 0 var(--color-ink); }
-  .snake-backdrop { opacity: .38; }
-  .snake-backdrop-projects { opacity: .32; }
 }
