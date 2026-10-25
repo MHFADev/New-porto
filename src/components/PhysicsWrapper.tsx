@@ -44,7 +44,7 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
       });
       const floor = Matter.Bodies.rectangle(width / 2, height + 22, width * 1.6, 36, {
         isStatic: true,
-        restitution: 0.48,
+        restitution: 0.5,
         friction: 0.8,
         label: 'contribution-floor',
       });
