@@ -571,7 +571,9 @@ h1, h2, h3 { text-wrap: balance; }
 .contribution-cell[data-level="3"] { background: color-mix(in srgb, var(--color-pink) 72%, var(--color-surface-container)); }
 .contribution-cell[data-level="4"] { background: var(--color-lime); border-color: var(--color-ink); }
 .contribution-cell:hover { transform: scale(1.35); border-color: var(--color-cotton); }
-.snake-accessory { position: fixed; inset: 0; z-index: 11; width: 100vw; height: 100vh; pointer-events: none; opacity: .16; mix-blend-mode: screen; }
+.snake-accessory { position: fixed; inset: 0; z-index: 11; width: 100vw; height: 100vh; pointer-events: none; opacity: .42; mix-blend-mode: screen; }
+.hero-playground > .relative,
+main > section > .mx-auto { position: relative; z-index: 12; }
 .project-row,
 .skill-card,
 .certificate-card,
@@ -591,5 +593,5 @@ h1, h2, h3 { text-wrap: balance; }
   .world-card-copy h3 { max-width: 15ch; }
   .project-copy { padding-left: 1rem; }
   .contribution-panel { box-shadow: 6px 8px 0 var(--color-ink); }
-  .snake-accessory { opacity: .12; }
+  .snake-accessory { opacity: .3; }
 }

@@ -2292,9 +2292,9 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
     if (!canvas || reduced) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const cell = 24;
+    const cell = 42;
     const state = {
-      head: { x: 5 * cell, y: 9 * cell },
+      head: { x: 4 * cell, y: 6 * cell },
       direction: { x: 1, y: 0 },
       history: [] as { x: number; y: number }[],
       food: [] as { x: number; y: number; phase: number }[],
@@ -2345,11 +2345,11 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
       ctx.translate(item.x, item.y + bob);
       ctx.fillStyle = '#ff5cbb';
       ctx.strokeStyle = '#151329';
-      ctx.lineWidth = 2.5;
-      ctx.fillRect(-8, -8, 16, 16);
-      ctx.strokeRect(-8, -8, 16, 16);
+      ctx.lineWidth = 3;
+      ctx.fillRect(-13, -13, 26, 26);
+      ctx.strokeRect(-13, -13, 26, 26);
       ctx.fillStyle = '#b9ff66';
-      ctx.fillRect(3, -13, 6, 5);
+      ctx.fillRect(5, -20, 9, 7);
       ctx.restore();
     };
     const render = (now: number) => {
@@ -2359,7 +2359,7 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
       const bodyColors = stage >= 3 ? ['#42dcff', '#ff5cbb', '#b9ff66', '#ffd84d'] : ['#42dcff', '#ff5cbb', '#b9ff66'];
       ctx.save();
       ctx.globalAlpha = .72;
-      ctx.lineWidth = 10 + stage * 2;
+      ctx.lineWidth = 18 + stage * 4;
       ctx.lineCap = 'square';
       ctx.lineJoin = 'miter';
       ctx.strokeStyle = bodyColors[0];
@@ -2372,35 +2372,35 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
       state.history.forEach((point, index) => {
         const tone = bodyColors[index % bodyColors.length];
         ctx.fillStyle = tone;
-        ctx.fillRect(point.x - 8, point.y - 8, 16, 16);
+        ctx.fillRect(point.x - 14, point.y - 14, 28, 28);
         ctx.fillStyle = 'rgba(21, 19, 41, .55)';
-        ctx.fillRect(point.x - 3, point.y - 3, 6, 6);
+        ctx.fillRect(point.x - 5, point.y - 5, 10, 10);
         if (stage >= 2 && index % 3 === 0) {
           ctx.fillStyle = stage >= 4 ? '#ffd84d' : '#ff5cbb';
-          ctx.fillRect(point.x - 11, point.y - 3, 4, 6);
+          ctx.fillRect(point.x - 19, point.y - 5, 6, 10);
         }
       });
       ctx.restore();
       ctx.save();
       ctx.fillStyle = stage >= 3 ? '#ff5cbb' : '#ffd84d';
       ctx.strokeStyle = '#151329';
-      ctx.lineWidth = 4;
-      ctx.fillRect(state.head.x - 10, state.head.y - 10, 20, 20);
-      ctx.strokeRect(state.head.x - 10, state.head.y - 10, 20, 20);
+      ctx.lineWidth = 5;
+      ctx.fillRect(state.head.x - 18, state.head.y - 18, 36, 36);
+      ctx.strokeRect(state.head.x - 18, state.head.y - 18, 36, 36);
       if (stage >= 1) {
         ctx.fillStyle = '#b9ff66';
-        ctx.fillRect(state.head.x - 13, state.head.y - 12, 5, 5);
-        ctx.fillRect(state.head.x + 8, state.head.y - 12, 5, 5);
+        ctx.fillRect(state.head.x - 22, state.head.y - 21, 8, 8);
+        ctx.fillRect(state.head.x + 14, state.head.y - 21, 8, 8);
       }
       if (stage >= 3) {
         ctx.fillStyle = '#42dcff';
-        ctx.fillRect(state.head.x - 4, state.head.y - 15, 8, 5);
+        ctx.fillRect(state.head.x - 7, state.head.y - 27, 14, 8);
       }
       ctx.fillStyle = '#151329';
-      ctx.fillRect(state.head.x + state.direction.x * 3 - 4, state.head.y + state.direction.y * 3 - 4, 4, 4);
+      ctx.fillRect(state.head.x + state.direction.x * 6 - 6, state.head.y + state.direction.y * 6 - 6, 6, 6);
       if (stage >= 2) {
         ctx.fillStyle = '#ff5cbb';
-        ctx.fillRect(state.head.x + state.direction.x * 11 - 2, state.head.y + state.direction.y * 11 - 2, 5, 4);
+        ctx.fillRect(state.head.x + state.direction.x * 20 - 3, state.head.y + state.direction.y * 20 - 3, 8, 6);
       }
       ctx.restore();
     };
@@ -2414,7 +2414,7 @@ function SnakeAccessory({ reduced }: { reduced: boolean }) {
         state.history.unshift({ ...state.head });
         state.history.length = Math.min(state.history.length, 24 + Math.min(state.evolution * 5, 40));
         if (state.head.x < cell || state.head.x > width - cell || state.head.y < cell || state.head.y > height - cell) turn();
-        if (now > state.turnAt) { state.turnAt = now + 1800; turn(); }
+        if (now > state.turnAt) { state.turnAt = now + 1250; turn(); }
         state.food = state.food.filter((item) => {
           const eaten = Math.abs(item.x - state.head.x) < cell && Math.abs(item.y - state.head.y) < cell;
           if (eaten) {
