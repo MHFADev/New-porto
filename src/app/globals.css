@@ -522,3 +522,16 @@ body {
 .rail-link[aria-current="location"] .rail-dot { height: 1.6rem; background: var(--color-pink); }
 .rail-label { padding: .4rem .65rem; border: 2px solid var(--color-ink); border-radius: 999px; background: var(--color-yellow); color: var(--color-ink); box-shadow: 3px 4px 0 var(--color-ink); font: 800 .75rem/1 var(--font-space); white-space: nowrap; opacity: 0; translate: .5rem 0; pointer-events: none; transition: opacity .2s ease, translate .25s ease; }
 .rail-link:hover .rail-label, .rail-link:focus-visible .rail-label { opacity: 1; translate: 0 0; }
+
+.certificate-card { box-shadow: 8px 10px 0 var(--color-ink); transition: translate .28s ease, rotate .28s ease, box-shadow .28s ease; }
+.certificate-card:nth-child(2n) { rotate: .7deg; }
+.certificate-card:hover { translate: 0 -.35rem; rotate: -.4deg; box-shadow: 12px 15px 0 var(--color-ink); }
+.certificate-preview { background: linear-gradient(135deg, var(--color-surface), var(--color-surface-container-high)); }
+.certificate-watermark { position: absolute; right: -1rem; bottom: -2.1rem; color: color-mix(in srgb, var(--color-cyan) 10%, transparent); font: 900 clamp(7rem, 18vw, 12rem)/1 var(--font-space); letter-spacing: -.1em; }
+.certificate-mark { display: inline-grid; min-width: 2.4rem; height: 2rem; place-items: center; border: 2px solid var(--color-ink); border-radius: .55rem; background: var(--color-yellow); color: var(--color-ink); box-shadow: 3px 3px 0 var(--color-ink); font: 900 .7rem/1 var(--font-jet); transform: rotate(4deg); }
+.certificate-card:nth-child(2n) .certificate-mark { background: var(--color-pink); transform: rotate(-4deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .certificate-card { transition: none; }
+  .certificate-card:hover { translate: 0; rotate: 0; }
+}

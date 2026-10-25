@@ -7,6 +7,7 @@ import type { Profile } from '@/lib/profile';
 import { isAuthed, readCookie } from '@/lib/auth';
 
 const IMAGE_EXT = /\.(jpe?g|png|webp|avif|gif|svg)$/i;
+const CERT_EXT = /\.(jpe?g|png|webp|avif|gif|pdf)$/i;
 
 async function projectsWithMeta(meta: Meta) {
   const cfg = imageRepoConfig();
@@ -31,6 +32,21 @@ async function projectsWithMeta(meta: Meta) {
     }));
 }
 
+
+async function certificatesWithMeta(meta: Meta) {
+  const cfg = imageRepoConfig();
+  if (!cfg) return [];
+  const res = await githubFetch(cfg, `${projectPath()}/certificates`, 'json');
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error(`GitHub ${res.status}: gagal membaca folder sertifikat`);
+  const items = (await res.json()) as { name: string; type: string }[];
+  return items.filter((file) => file.type === 'file' && CERT_EXT.test(file.name)).map((file) => ({
+    name: file.name,
+    url: imageUrl(projectPath(), 'certificates', file.name),
+    ...meta.certificates[file.name],
+  }));
+}
+
 export async function GET(req: NextRequest) {
   if (!isAuthed(readCookie(req))) {
     return Response.json({ error: 'unauthorized' }, { status: 401 });
@@ -45,6 +61,7 @@ export async function GET(req: NextRequest) {
       .map(publicTechIcon);
     return Response.json({
       projects: await projectsWithMeta(meta),
+      certificates: await certificatesWithMeta(meta),
       icons,
       techStack: meta.techStack,
       profile: meta.profile,
@@ -60,8 +77,9 @@ export async function POST(req: NextRequest) {
   if (!isAuthed(readCookie(req))) {
     return Response.json({ error: 'unauthorized' }, { status: 401 });
   }
-  const { projects, techStack, profile } = (await req.json().catch(() => ({}))) as {
+  const { projects, certificates, techStack, profile } = (await req.json().catch(() => ({}))) as {
     projects?: { name: string; title?: string; desc?: string; techStack?: string[] }[];
+    certificates?: { name: string; title?: string; issuer?: string; year?: string; desc?: string; verifyUrl?: string }[];
     techStack?: string[];
     profile?: Partial<Profile>;
   };
@@ -70,6 +88,7 @@ export async function POST(req: NextRequest) {
   }
   const meta: Meta = {
     projects: {},
+    certificates: {},
     techStack: (Array.isArray(techStack) ? techStack : []).filter(hasTechIcon),
     profile: normalizeProfile(profile),
   };
@@ -82,6 +101,19 @@ export async function POST(req: NextRequest) {
       };
     }
   }
+
+  for (const certificate of certificates ?? []) {
+    if (certificate.name) {
+      meta.certificates[certificate.name] = {
+        title: certificate.title ?? '',
+        issuer: certificate.issuer ?? '',
+        year: certificate.year ?? '',
+        desc: certificate.desc ?? '',
+        verifyUrl: certificate.verifyUrl ?? '',
+      };
+    }
+  }
+
   const result = await writeMeta(meta);
   if (!result.ok) {
     return Response.json({ error: result.error }, { status: 502 });

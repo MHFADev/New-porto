@@ -6,6 +6,7 @@ import { DEFAULT_PROFILE } from '@/lib/profile';
 import type { Profile } from '@/lib/profile';
 
 type Project = { name: string; url: string; title: string; desc: string; techStack: string[] };
+type Certificate = { name: string; url: string; title?: string; issuer?: string; year?: string; desc?: string; verifyUrl?: string };
 type Icon = { slug: string; label: string; url: string; hex: string; category: 'IT Support' | 'Technology' };
 type State = 'loading' | 'auth' | 'ready';
 type PickerTarget = { kind: 'global' } | { kind: 'project'; name: string };
@@ -13,6 +14,7 @@ type PickerTarget = { kind: 'global' } | { kind: 'project'; name: string };
 export default function AdminPage() {
   const [state, setState] = useState<State>('loading');
   const [projects, setProjects] = useState<Project[]>([]);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [icons, setIcons] = useState<Icon[]>([]);
   const [techStack, setTechStack] = useState<string[]>([]);
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
@@ -45,8 +47,9 @@ export default function AdminPage() {
       setState('auth');
       return;
     }
-    const data = (await res.json()) as { projects: Project[]; icons: Icon[]; techStack: string[]; profile: Profile; storageConfigured: boolean };
+    const data = (await res.json()) as { projects: Project[]; certificates: Certificate[]; icons: Icon[]; techStack: string[]; profile: Profile; storageConfigured: boolean };
     setProjects(data.projects);
+    setCertificates(data.certificates ?? []);
     setIcons(data.icons);
     setIconResults(data.icons);
     setTechStack(data.techStack);
@@ -112,7 +115,7 @@ export default function AdminPage() {
     const res = await fetch('/api/admin/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projects, techStack, profile }),
+      body: JSON.stringify({ projects, certificates, techStack, profile }),
     });
     setSaving(false);
     if (!res.ok) {
@@ -235,6 +238,39 @@ export default function AdminPage() {
     }
   }
 
+
+  async function uploadCertificateFile(file: File) {
+    if (!storageConfigured) return;
+    if (file.size > 10 * 1024 * 1024) { setError('Ukuran sertifikat maksimal 10 MB.'); return; }
+    setUploading('certificate'); setError(''); setNotice('');
+    try {
+      const form = new FormData(); form.append('file', file);
+      const res = await fetch('/api/admin/certificates', { method: 'POST', body: form });
+      const data = (await res.json().catch(() => ({}))) as { fileName?: string; url?: string; error?: string };
+      if (!res.ok || !data.fileName || !data.url) { setError(data.error ?? 'Gagal mengunggah sertifikat.'); return; }
+      setCertificates((previous) => [{ name: data.fileName!, url: data.url!, title: '', issuer: '', year: '', desc: '', verifyUrl: '' }, ...previous]);
+      setDirty(true); setNotice('Sertifikat terunggah. Lengkapi metadata lalu simpan perubahan.');
+    } catch { setError('Koneksi gagal saat mengunggah sertifikat.'); }
+    finally { setUploading(''); }
+  }
+
+  async function deleteCertificateFile(certificate: Certificate) {
+    if (!window.confirm(`Hapus sertifikat “${certificate.title || certificate.name}” secara permanen?`)) return;
+    setDeleting(certificate.name); setError(''); setNotice('');
+    try {
+      const res = await fetch(`/api/admin/certificates?name=${encodeURIComponent(certificate.name)}`, { method: 'DELETE' });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) { setError(data.error ?? 'Gagal menghapus sertifikat.'); return; }
+      setCertificates((previous) => previous.filter((item) => item.name !== certificate.name)); setDirty(true); setNotice('Sertifikat terhapus. Simpan untuk menghapus metadata.');
+    } catch { setError('Koneksi gagal saat menghapus sertifikat.'); }
+    finally { setDeleting(''); }
+  }
+
+  function updateCertificate(name: string, update: Partial<Certificate>) {
+    setCertificates((previous) => previous.map((certificate) => certificate.name === name ? { ...certificate, ...update } : certificate));
+    setDirty(true);
+  }
+
   function updateProject(name: string, update: Partial<Project>) {
     setProjects((previous) => previous.map((project) => project.name === name ? { ...project, ...update } : project));
     setDirty(true);
@@ -310,8 +346,9 @@ export default function AdminPage() {
           {!storageConfigured ? <Notice tone="warning">Isi IMAGE_REPO_URL dan IMAGE_REPO_PAT di environment agar upload dan penyimpanan aktif.</Notice> : null}
         </div>
 
-        <section className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard accent="bg-pink" value={projects.length} label="Project tersimpan" icon="▣" />
+          <StatCard accent="bg-cyan" value={certificates.length} label="Sertifikat tersimpan" icon="▤" />
           <StatCard accent="bg-cyan" value={techStack.length} label="Core tech stack" icon="⌘" />
           <StatCard accent="bg-lime" value={projects.reduce((total, project) => total + project.techStack.length, 0)} label="Tag di project" icon="✦" />
           <StatCard accent="bg-yellow" value={`${profileCompletion(profile)}%`} label="Kelengkapan profil" icon="◎" />
@@ -330,7 +367,17 @@ export default function AdminPage() {
         </section>
 
         <section className="mb-8 rounded-[1.75rem] border border-line-strong bg-surface-container/70 p-5 sm:p-7">
-          <SectionTitle index="02" title="Core tech stack" description="Ikon utama yang tampil di bagian capabilities portfolio." />
+          <SectionTitle index="02" title="Sertifikat" description="Upload bukti kompetensi, lalu lengkapi penerbit, tahun, dan link verifikasi." />
+          <label className={`mb-5 flex cursor-pointer items-center justify-between gap-4 rounded-2xl border-2 border-dashed border-cyan/50 bg-cyan/5 p-4 transition-colors hover:border-cyan ${!storageConfigured || uploading ? 'pointer-events-none opacity-50' : ''}`}>
+            <span><strong className="block text-cotton">{uploading === 'certificate' ? 'Mengunggah sertifikat…' : 'Tambah file sertifikat'}</strong><small className="text-xs text-on-surface-variant">PDF atau gambar, maksimal 10 MB.</small></span>
+            <span className="rounded-full bg-cyan px-4 py-2 text-sm font-black text-ink">Upload</span>
+            <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp,image/avif,.pdf" disabled={!storageConfigured || Boolean(uploading)} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) void uploadCertificateFile(file); event.currentTarget.value = ''; }} className="sr-only" />
+          </label>
+          {certificates.length ? <div className="space-y-4">{certificates.map((certificate) => <CertificateEditor key={certificate.name} certificate={certificate} onChange={(update) => updateCertificate(certificate.name, update)} onDelete={() => void deleteCertificateFile(certificate)} deleting={deleting === certificate.name} />)}</div> : <p className="rounded-2xl border border-dashed border-line-strong px-5 py-8 text-center text-sm text-on-surface-variant">Belum ada sertifikat. Upload file pertama untuk mulai membangun daftar kredensial.</p>}
+        </section>
+
+        <section className="mb-8 rounded-[1.75rem] border border-line-strong bg-surface-container/70 p-5 sm:p-7">
+          <SectionTitle index="03" title="Core tech stack" description="Ikon utama yang tampil di bagian capabilities portfolio." />
           <SelectedIcons
             slugs={techStack}
             iconMap={iconMap}
@@ -344,7 +391,7 @@ export default function AdminPage() {
 
         <section className="mb-8 rounded-[1.75rem] border border-line-strong bg-surface-container/70 p-5 sm:p-7">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <SectionTitle index="03" title="Tambah project" description="Unggah hingga 6 gambar sekaligus, maksimal 8 MB per gambar." />
+            <SectionTitle index="04" title="Tambah project" description="Unggah hingga 6 gambar sekaligus, maksimal 8 MB per gambar." />
             <label
               onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
               onDragOver={(event) => event.preventDefault()}
@@ -364,7 +411,7 @@ export default function AdminPage() {
 
         <section>
           <div className="mb-5 flex items-end justify-between gap-4">
-            <SectionTitle index="04" title="Kelola project" description="Atur judul, deskripsi, dan tech stack yang tampil di setiap card." />
+            <SectionTitle index="05" title="Kelola project" description="Atur judul, deskripsi, dan tech stack yang tampil di setiap card." />
             <span className="hidden rounded-full border border-line-strong px-3 py-1.5 font-mono text-[10px] text-on-surface-variant sm:inline">{projects.length} ITEMS</span>
           </div>
           {projects.length ? (
@@ -410,6 +457,27 @@ export default function AdminPage() {
         />
       ) : null}
     </main>
+  );
+}
+
+
+function CertificateEditor({ certificate, onChange, onDelete, deleting }: { certificate: Certificate; onChange: (update: Partial<Certificate>) => void; onDelete: () => void; deleting: boolean }) {
+  const isPdf = certificate.name.toLowerCase().endsWith('.pdf');
+  return (
+    <article className="grid gap-5 rounded-2xl border border-line-strong bg-surface/55 p-4 sm:grid-cols-[10rem_1fr] sm:p-5">
+      <div className="overflow-hidden rounded-xl border border-line-strong bg-surface-container">
+        {isPdf ? <div className="grid h-32 place-items-center font-mono text-xs font-black text-pink">PDF / CREDENTIAL</div> : <img src={certificate.url} alt="Preview sertifikat" className="h-32 w-full object-cover" />}
+        <a href={certificate.url} target="_blank" rel="noreferrer" className="block border-t border-line-strong px-3 py-2 text-center text-xs font-bold text-cyan hover:underline">Buka file</a>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ProfileField label="Judul sertifikat" value={certificate.title ?? ''} onChange={(title) => onChange({ title })} placeholder="Contoh: Google IT Support" />
+        <ProfileField label="Penerbit" value={certificate.issuer ?? ''} onChange={(issuer) => onChange({ issuer })} placeholder="Google / Cisco / Dicoding" />
+        <ProfileField label="Tahun" value={certificate.year ?? ''} onChange={(year) => onChange({ year })} placeholder="2026" />
+        <ProfileField label="Link verifikasi (opsional)" value={certificate.verifyUrl ?? ''} onChange={(verifyUrl) => onChange({ verifyUrl })} type="url" placeholder="https://…" />
+        <div className="sm:col-span-2"><ProfileArea label="Deskripsi singkat" value={certificate.desc ?? ''} onChange={(desc) => onChange({ desc })} rows={2} /></div>
+        <div className="flex items-center justify-between gap-3 border-t border-line-strong pt-3 sm:col-span-2"><span className="truncate font-mono text-[10px] text-on-surface-variant/60">{certificate.name}</span><button type="button" onClick={onDelete} disabled={deleting} className="shrink-0 rounded-full border border-pink/50 px-4 py-2 text-xs font-bold text-pink hover:bg-pink/10 disabled:opacity-50">{deleting ? 'Menghapus…' : 'Hapus file'}</button></div>
+      </div>
+    </article>
   );
 }
 

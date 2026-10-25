@@ -4,8 +4,10 @@ import type { Profile } from '@/lib/profile';
 const GH_API = 'https://api.github.com/repos';
 
 export type ProjectMeta = { title?: string; desc?: string; techStack?: string[] };
+export type CertificateMeta = { title?: string; issuer?: string; year?: string; desc?: string; verifyUrl?: string };
 export type Meta = {
   projects: Record<string, ProjectMeta>;
+  certificates: Record<string, CertificateMeta>;
   techStack: string[];
   profile: Profile;
 };
@@ -46,13 +48,14 @@ export async function githubFetch(cfg: RepoConfig, path: string, accept: 'raw' |
 
 export async function readMeta(): Promise<Meta> {
   const cfg = imageRepoConfig();
-  if (!cfg) return { projects: {}, techStack: [], profile: DEFAULT_PROFILE };
+  if (!cfg) return { projects: {}, certificates: {}, techStack: [], profile: DEFAULT_PROFILE };
   const res = await githubFetch(cfg, `${projectPath()}/meta.json`, 'json');
-  if (!res.ok) return { projects: {}, techStack: [], profile: DEFAULT_PROFILE };
+  if (!res.ok) return { projects: {}, certificates: {}, techStack: [], profile: DEFAULT_PROFILE };
   const data = (await res.json()) as { content: string };
   const parsed = JSON.parse(Buffer.from(data.content, 'base64').toString('utf8')) as Partial<Meta>;
   return {
     projects: parsed.projects ?? {},
+    certificates: parsed.certificates ?? {},
     techStack: Array.isArray(parsed.techStack) ? parsed.techStack : [],
     profile: normalizeProfile(parsed.profile),
   };
@@ -195,6 +198,54 @@ export async function deletePortfolioCv() {
     method: 'DELETE',
     headers: headers(cfg, 'application/vnd.github+json'),
     body: JSON.stringify({ message: 'Delete portfolio CV', sha }),
+    cache: 'no-store',
+  });
+  if (!removed.ok) {
+    const err = (await removed.json().catch(() => null)) as { message?: string } | null;
+    return { ok: false as const, error: err?.message || `GitHub ${removed.status}` };
+  }
+  return { ok: true as const };
+}
+
+
+export async function uploadCertificate(name: string, bytes: Uint8Array) {
+  const cfg = imageRepoConfig();
+  if (!cfg) return { ok: false as const, error: 'IMAGE_REPO_URL / IMAGE_REPO_PAT not set' };
+  const fileName = safeImageName(name);
+  const path = `${projectPath()}/certificates/${fileName}`;
+  const res = await fetch(contentUrl(cfg, path), {
+    method: 'PUT',
+    headers: headers(cfg, 'application/vnd.github+json'),
+    body: JSON.stringify({ message: `Add portfolio certificate: ${fileName}`, content: Buffer.from(bytes).toString('base64') }),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => null)) as { message?: string } | null;
+    return { ok: false as const, error: err?.message || `GitHub ${res.status}` };
+  }
+  return { ok: true as const, fileName, path };
+}
+
+export function isValidCertificateName(fileName: string) {
+  return /^[a-z0-9][a-z0-9._-]*\.(?:jpe?g|png|webp|avif|gif|pdf)$/i.test(fileName) && !fileName.includes('..');
+}
+
+export async function deleteCertificate(fileName: string) {
+  const cfg = imageRepoConfig();
+  if (!cfg) return { ok: false as const, error: 'IMAGE_REPO_URL / IMAGE_REPO_PAT not set' };
+  if (!isValidCertificateName(fileName)) {
+    return { ok: false as const, error: 'Nama file sertifikat tidak valid.' };
+  }
+  const url = contentUrl(cfg, `${projectPath()}/certificates/${fileName}`);
+  const existing = await fetch(url, { headers: headers(cfg, 'application/vnd.github+json'), cache: 'no-store' });
+  if (existing.status === 404) return { ok: true as const };
+  if (!existing.ok) return { ok: false as const, error: `GitHub ${existing.status}: gagal membaca sertifikat.` };
+  const { sha } = (await existing.json()) as { sha?: string };
+  if (!sha) return { ok: false as const, error: 'GitHub tidak mengembalikan identitas sertifikat.' };
+  const removed = await fetch(url, {
+    method: 'DELETE',
+    headers: headers(cfg, 'application/vnd.github+json'),
+    body: JSON.stringify({ message: `Delete portfolio certificate: ${fileName}`, sha }),
     cache: 'no-store',
   });
   if (!removed.ok) {

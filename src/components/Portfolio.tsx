@@ -12,6 +12,7 @@ import type { Profile } from '@/lib/profile';
 const NAV = [
   { label: 'About', href: '#about' },
   { label: 'Skills', href: '#skills' },
+  { label: 'Certificates', href: '#certificates' },
   { label: 'Work', href: '#projects' },
   { label: 'Journey', href: '#story' },
   { label: 'Contact', href: '#contact' },
@@ -1664,6 +1665,34 @@ const FALLBACK_PROJECTS: Project[] = [
   },
 ];
 
+
+type Certificate = { name: string; url: string; title: string; issuer: string; year: string; desc: string; verifyUrl: string };
+
+function Certificates() {
+  const [certificates, setCertificates] = useState<Certificate[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetch('/api/certificates').then((response) => response.ok ? response.json() : []).then((data) => live && setCertificates(Array.isArray(data) ? data : [])).catch(() => live && setCertificates([]));
+    return () => { live = false; };
+  }, []);
+  if (certificates?.length === 0) return null;
+  return (
+    <section id="certificates" className="relative border-y border-line-strong bg-surface-container/25 scroll-mt-16">
+      <div className="mx-auto max-w-6xl px-5 py-28 sm:px-8 sm:py-36">
+        <SectionHeading index="03" kicker="Credentials" title="Proof behind the practice." gradient={['practice']} />
+        <p className="mb-12 max-w-xl text-base leading-relaxed text-on-surface-variant sm:text-lg">A compact record of the courses and certifications that keep the work grounded in real systems, not just polished screens.</p>
+        {certificates === null ? <div className="py-10 font-mono text-xs text-on-surface-variant/60">LOADING CREDENTIALS…</div> : <div className="grid gap-5 md:grid-cols-2">{certificates.map((certificate, index) => {
+          const isPdf = certificate.name.toLowerCase().endsWith('.pdf');
+          return <Reveal key={certificate.name} delay={index * 80}><article className="certificate-card group relative overflow-hidden rounded-[1.75rem] border-[3px] border-ink bg-surface-container/80 p-5 sm:p-6">
+            <div className="certificate-preview relative mb-6 flex aspect-[16/9] items-center justify-center overflow-hidden rounded-xl border-2 border-ink bg-surface"><span className="certificate-watermark" aria-hidden="true">{isPdf ? 'PDF' : 'CERT'}</span>{isPdf ? <div className="relative z-[1] text-center"><div className="font-display text-5xl font-black text-pink">PDF</div><div className="mt-2 font-mono text-[10px] tracking-[.2em] text-on-surface-variant">CREDENTIAL FILE</div></div> : <img src={certificate.url} alt={`${certificate.title || 'Certificate'} preview`} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />}</div>
+            <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] font-bold tracking-[.18em] text-cyan">{certificate.issuer || 'CERTIFICATION'} {certificate.year ? `· ${certificate.year}` : ''}</p><h3 className="mt-2 font-display text-2xl font-black tracking-tight text-cotton">{certificate.title || toTitle(certificate.name)}</h3></div><span className="certificate-mark" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span></div>{certificate.desc ? <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">{certificate.desc}</p> : null}<div className="mt-6 flex flex-wrap gap-3"><a href={certificate.url} target="_blank" rel="noreferrer" className="cartoon-button inline-flex min-h-11 items-center rounded-full px-4 py-2 text-xs font-black">View certificate</a>{certificate.verifyUrl ? <a href={certificate.verifyUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-line-strong px-4 py-2 text-xs font-bold text-cyan hover:border-cyan">Verify credential</a> : null}</div>
+          </article></Reveal>;
+        })}</div>}
+      </div>
+    </section>
+  );
+}
+
 function Projects() {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -2135,6 +2164,7 @@ const RAIL = [
   { id: 'top', label: 'Intro' },
   { id: 'about', label: 'About' },
   { id: 'skills', label: 'Skills' },
+  { id: 'certificates', label: 'Certificates' },
   { id: 'projects', label: 'Work' },
   { id: 'story', label: 'Journey' },
   { id: 'contact', label: 'Contact' },
@@ -2272,6 +2302,7 @@ export default function Portfolio() {
         <Marquee items={MARQUEE_ITEMS} />
         <About profile={profile} />
         <Skills />
+        <Certificates />
         <Projects />
         <WorldScroll />
         <Contact profile={profile} />
