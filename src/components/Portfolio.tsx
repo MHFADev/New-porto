@@ -793,11 +793,13 @@ function SmartImage({
   alt,
   className,
   fallback,
+  loading = 'lazy',
 }: {
   src: string;
   alt: string;
   className?: string;
   fallback?: ReactNode;
+  loading?: 'lazy' | 'eager';
 }) {
   const [loadedSrc, setLoadedSrc] = useState('');
   const [failedSrc, setFailedSrc] = useState('');
@@ -813,7 +815,7 @@ function SmartImage({
       <img
         src={src}
         alt={alt}
-        loading="lazy"
+        loading={loading}
         decoding="async"
         onLoad={() => setLoadedSrc(src)}
         onError={() => setFailedSrc(src)}
@@ -1988,7 +1990,7 @@ function WorldScroll() {
               <div className="world-card-image">
                 <div className="world-dim" aria-hidden="true" />
                 <div className="world-parallax">
-                  <SmartImage src={scene.img} alt={`${scene.title} — field work`} className="absolute inset-0 w-full h-full object-cover" fallback={<ProjectFallback name={scene.title} />} />
+                  <SmartImage src={scene.img} alt={`${scene.title} — field work`} loading="eager" className="absolute inset-0 w-full h-full object-cover" fallback={<ProjectFallback name={scene.title} />} />
                 </div>
                 <div className="world-card-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
               </div>
