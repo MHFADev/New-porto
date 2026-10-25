@@ -535,3 +535,33 @@ body {
   .certificate-card { transition: none; }
   .certificate-card:hover { translate: 0; rotate: 0; }
 }
+
+/* Small polish pass: sharpen hierarchy without changing the site's visual identity. */
+html { scroll-padding-top: 5rem; }
+body { text-rendering: optimizeLegibility; }
+h1, h2, h3 { text-wrap: balance; }
+
+.section-index,
+.brand-badge,
+.cartoon-button,
+.project-number {
+  transition: transform .22s ease, box-shadow .22s ease, background-color .22s ease;
+}
+.section-index:hover { transform: rotate(0deg) translateY(-2px); box-shadow: 4px 5px 0 var(--color-ink); }
+.brand-badge:hover { transform: rotate(0deg) translateY(-2px); }
+.cartoon-button:focus-visible,
+.brand-badge:focus-visible,
+.section-index:focus-visible { outline-offset: 5px; }
+
+.project-row h3,
+.world-card-copy h3 { text-wrap: balance; }
+.project-row .project-tech-chip { min-height: 2.35rem; }
+.project-row:hover .project-number { transform: rotate(0deg) translateY(-2px); }
+.world-card-copy { background: color-mix(in srgb, var(--color-surface-container) 92%, var(--scene-accent) 8%); }
+.world-card-copy h3 { max-width: 18ch; }
+.contact-card { isolation: isolate; }
+
+@media (max-width: 640px) {
+  .section-index { min-width: 2.2rem; height: 2rem; }
+  .world-card-copy h3 { max-width: 15ch; }
+}
