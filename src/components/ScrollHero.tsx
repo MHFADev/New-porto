@@ -77,11 +77,25 @@ function IntroCard({ profile, lang }: { profile: Profile; lang: string }) {
       </p>
 
       <h1 className="mb-5 font-display text-[clamp(2.6rem,6.2vw,4.6rem)] font-black leading-[1.02] tracking-[-0.03em] text-white">
-        I keep{' '}
-        <span className="bg-gradient-to-r from-[#7d39eb] to-[#c6ff33] bg-clip-text text-transparent">systems</span>{' '}
-        happy &amp;{' '}
-        <span className="bg-gradient-to-r from-[#7d39eb] to-[#c6ff33] bg-clip-text text-transparent">ideas</span>{' '}
-        alive.
+        {lang === 'id' ? (
+          <>
+            Saya menjaga{' '}
+            <span className="bg-gradient-to-r from-[#7d39eb] to-[#c6ff33] bg-clip-text text-transparent">sistem</span>{' '}
+            tetap sehat &amp;{' '}
+            <span className="bg-gradient-to-r from-[#7d39eb] to-[#c6ff33] bg-clip-text text-transparent">ide</span>{' '}
+            tetap hidup.
+          </>
+        ) : lang === 'en' ? (
+          <>
+            I keep{' '}
+            <span className="bg-gradient-to-r from-[#7d39eb] to-[#c6ff33] bg-clip-text text-transparent">systems</span>{' '}
+            happy &amp;{' '}
+            <span className="bg-gradient-to-r from-[#7d39eb] to-[#c6ff33] bg-clip-text text-transparent">ideas</span>{' '}
+            alive.
+          </>
+        ) : (
+          <LocText idText="Saya menjaga sistem tetap sehat & ide tetap hidup." enText="I keep systems happy & ideas alive." lang={lang} />
+        )}
       </h1>
 
       <p className="mb-3 font-display text-base font-medium text-white/85 sm:text-lg"><LocText idText={profile.primaryRole} enText={profile.primaryRoleEn} lang={lang} /></p>
