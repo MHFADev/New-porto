@@ -32,6 +32,8 @@ export async function GET() {
         url: `/api/images/${encodeURIComponent(projectPath())}/${encodeURIComponent(f.name)}`,
         title: meta.projects[f.name]?.title ?? '',
         desc: meta.projects[f.name]?.desc ?? '',
+        titleEn: meta.projects[f.name]?.titleEn ?? '',
+        descEn: meta.projects[f.name]?.descEn ?? '',
         techStack: (meta.projects[f.name]?.techStack ?? [])
           .map((slug) => techIcon(slug))
           .filter((icon): icon is NonNullable<typeof icon> => Boolean(icon))
