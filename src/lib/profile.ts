@@ -6,7 +6,15 @@ export type Profile = {
   location: string;
   locationShort: string;
   focus: string;
+  focusEn?: string;
   status: string;
+  statusEn?: string;
+  primaryRoleEn?: string;
+  rolesEn?: string[];
+  heroIntroEn?: string;
+  aboutEn?: string;
+  aboutSecondaryEn?: string;
+  availabilityEn?: string;
   heroIntro: string;
   about: string;
   aboutSecondary: string;
@@ -65,6 +73,14 @@ export function normalizeProfile(value: unknown): Profile {
     linkedin: text('linkedin'),
     website: text('website'),
     cvFileName: text('cvFileName'),
+    primaryRoleEn: typeof input.primaryRoleEn === 'string' ? input.primaryRoleEn : '',
+    rolesEn: Array.isArray(input.rolesEn) ? input.rolesEn.filter((role): role is string => typeof role === 'string') : [],
+    focusEn: typeof input.focusEn === 'string' ? input.focusEn : '',
+    statusEn: typeof input.statusEn === 'string' ? input.statusEn : '',
+    heroIntroEn: typeof input.heroIntroEn === 'string' ? input.heroIntroEn : '',
+    aboutEn: typeof input.aboutEn === 'string' ? input.aboutEn : '',
+    aboutSecondaryEn: typeof input.aboutSecondaryEn === 'string' ? input.aboutSecondaryEn : '',
+    availabilityEn: typeof input.availabilityEn === 'string' ? input.availabilityEn : '',
     extraLinks: Array.isArray(input.extraLinks)
       ? input.extraLinks
           .filter((link): link is { label: string; url: string } => Boolean(link && typeof link === 'object' && typeof link.label === 'string' && typeof link.url === 'string'))
