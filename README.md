@@ -30,6 +30,8 @@ Content written in Indonesian in the admin panel is translated to English on sav
 
 With no variables set, the no-key fallbacks still work; every provider failure falls back to the original text.
 
+Status: OpenRouter provider enabled (`OPENROUTER_API_KEY` configured in Vercel).
+
 ## Quality checks
 
 ```bash
