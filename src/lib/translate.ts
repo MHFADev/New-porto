@@ -20,6 +20,9 @@ const ID_WORDS = new Set([
   'menggunakan', 'berbasis', 'sistem', 'aplikasi', 'pengguna', 'layanan',
   'membantu', 'membangun', 'pengalaman', 'proyek', 'kerja', 'tahun', 'serta',
   'agar', 'lebih', 'saat', 'ketika', 'melalui', 'antara', 'setiap', 'semua',
+  'sertifikat', 'jaringan', 'komputer', 'dasar', 'kelas', 'siswa', 'guru',
+  'sekolah', 'manajemen', 'perangkat', 'lunak', 'teknologi', 'informasi',
+  'kursus', 'pelatihan', 'akun', 'masuk', 'keluar', 'beranda', 'tentang',
 ]);
 
 const EN_WORDS = new Set([
@@ -72,10 +75,9 @@ const LANG_NAME: Record<string, string> = {
 /* ---------------- OpenRouter (the only provider) ---------------- */
 
 const OPENROUTER_FREE_MODELS = [
-  'openrouter/free',
-  'google/gemma-4-31b-it:free',
+    'google/gemma-4-31b-it:free',
+  'google/gemma-4-26b-a4b-it:free',
   'nvidia/nemotron-3-ultra-550b-a55b:free',
-
 ];
 
 export function openRouterConfigured(): boolean {
@@ -149,6 +151,18 @@ const TRANSLATOR_SYSTEM = (from: string, to: string) =>
   'Output ONLY the translation: no explanations, no notes, no quotation marks around it. ' +
   'Preserve names, brands, URLs, numbers, and line breaks exactly.';
 
+const TARGET_SCRIPT: Record<string, RegExp> = {
+  ja: /[\u3040-\u30ff\u4e00-\u9faf]/,
+  ko: /[\uac00-\ud7af]/,
+  'zh-CN': /[\u4e00-\u9faf]/,
+  ar: /[\u0600-\u06ff]/,
+};
+
+function scriptOk(out: string, to: string): boolean {
+  const re = TARGET_SCRIPT[to];
+  return !re || re.test(out);
+}
+
 export type TranslateOutcome = {
   text: string;
   provider: 'openrouter' | 'none';
@@ -165,6 +179,9 @@ export async function translateDetailed(text: string, from: string, to: string):
   }
   const r = await openRouterChat(TRANSLATOR_SYSTEM(from, to), clean);
   const out = usable(r.content, clean);
+  if (out && !scriptOk(out, to)) {
+    return { text: clean, provider: 'none', model: r.model, status: r.status, error: 'output not in target script' };
+  }
   if (out) return { text: out, provider: 'openrouter', model: r.model, status: r.status, error: null };
   return { text: clean, provider: 'none', model: r.model, status: r.status, error: r.error ?? 'unusable output' };
 }
