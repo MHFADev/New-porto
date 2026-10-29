@@ -3,8 +3,8 @@ import type { Profile } from '@/lib/profile';
 
 const GH_API = 'https://api.github.com/repos';
 
-export type ProjectMeta = { title?: string; desc?: string; techStack?: string[] };
-export type CertificateMeta = { title?: string; issuer?: string; year?: string; desc?: string; verifyUrl?: string };
+export type ProjectMeta = { title?: string; desc?: string; titleEn?: string; descEn?: string; techStack?: string[] };
+export type CertificateMeta = { title?: string; issuer?: string; year?: string; desc?: string; titleEn?: string; descEn?: string; verifyUrl?: string };
 export type Meta = {
   projects: Record<string, ProjectMeta>;
   certificates: Record<string, CertificateMeta>;
