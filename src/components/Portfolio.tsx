@@ -969,6 +969,71 @@ function SectionHeading({
   );
 }
 
+/** Manual language switcher: a globe button with a dropdown. The choice
+ *  overrides region detection and is remembered on the visitor's device. */
+function LangButton({ i18n }: { i18n: I18n }) {
+  const [open, setOpen] = useState(false);
+  const current = i18n.choice === 'auto'
+    ? i18n.tx('lang.auto')
+    : (LANG_OPTIONS.find((o) => o.code === i18n.choice)?.label ?? i18n.choice);
+  const pick = (value: string) => {
+    i18n.setChoice(value);
+    setOpen(false);
+  };
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Change language"
+        className="flex h-10 items-center gap-2 rounded-full border border-line-strong px-3 text-sm text-on-surface-variant transition-colors hover:text-cotton"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18" />
+          <path d="M12 3c2.5 2.6 3.9 5.7 3.9 9S14.5 18.4 12 21c-2.5-2.6-3.9-5.7-3.9-9S9.5 5.6 12 3Z" />
+        </svg>
+        <span className="hidden max-w-[7.5rem] truncate sm:inline">{current}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      {open ? (
+        <>
+          <button type="button" aria-hidden="true" tabIndex={-1} className="fixed inset-0 z-40 cursor-default" onClick={() => setOpen(false)} />
+          <div role="listbox" aria-label="Language" className="absolute right-0 z-50 mt-2 w-60 rounded-2xl border border-line-strong bg-surface-container p-1.5 shadow-2xl">
+            <button
+              type="button"
+              role="option"
+              aria-selected={i18n.choice === 'auto'}
+              onClick={() => pick('auto')}
+              className={`flex min-h-[44px] w-full items-center justify-between gap-3 rounded-xl px-3 text-left text-sm transition-colors hover:bg-white/5 ${i18n.choice === 'auto' ? 'font-bold text-cyan' : 'text-on-surface-variant'}`}
+            >
+              <span>{i18n.tx('lang.auto')}</span>
+              {i18n.choice === 'auto' ? <span aria-hidden="true">✓</span> : null}
+            </button>
+            {LANG_OPTIONS.map((o) => (
+              <button
+                key={o.code}
+                type="button"
+                role="option"
+                aria-selected={i18n.choice === o.code}
+                onClick={() => pick(o.code)}
+                className={`flex min-h-[44px] w-full items-center justify-between gap-3 rounded-xl px-3 text-left text-sm transition-colors hover:bg-white/5 ${i18n.choice === o.code ? 'font-bold text-cyan' : 'text-on-surface-variant'}`}
+              >
+                <span>{o.label}</span>
+                {i18n.choice === o.code ? <span aria-hidden="true">✓</span> : null}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 function Navbar({ theme, onToggle, i18n }: { theme: string; onToggle: () => void; i18n: I18n }) {
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -1084,17 +1149,7 @@ function Navbar({ theme, onToggle, i18n }: { theme: string; onToggle: () => void
           </nav>
 
           <div className="flex items-center gap-3">
-            <select
-              aria-label="Language"
-              value={i18n.choice}
-              onChange={(e) => i18n.setChoice(e.target.value)}
-              className="h-10 max-w-[9.5rem] cursor-pointer rounded-full border border-line-strong bg-transparent px-3 text-sm text-on-surface-variant transition-colors hover:text-cotton"
-            >
-              <option value="auto">{i18n.tx('lang.auto')}</option>
-              {LANG_OPTIONS.map((o) => (
-                <option key={o.code} value={o.code}>{o.label}</option>
-              ))}
-            </select>
+            <LangButton i18n={i18n} />
             <button
               onClick={onToggle}
               aria-label="Toggle color theme"
@@ -2028,18 +2083,18 @@ function Contact({ profile, i18n }: { profile: Profile; i18n: I18n }) {
   );
 }
 
-const RAIL = [
-  { id: 'top', label: 'Intro' },
-  { id: 'about', label: 'About' },
-  { id: 'skills', label: 'Skills' },
-  { id: 'certificates', label: 'Certificates' },
-  { id: 'projects', label: 'Work' },
-  { id: 'story', label: 'Journey' },
-  { id: 'contact', label: 'Contact' },
+const RAIL: { id: string; label: string; key: UiKey | null }[] = [
+  { id: 'top', label: 'Intro', key: null },
+  { id: 'about', label: 'About', key: 'nav.about' },
+  { id: 'skills', label: 'Skills', key: 'nav.skills' },
+  { id: 'certificates', label: 'Certificates', key: 'nav.certificates' },
+  { id: 'projects', label: 'Work', key: 'nav.work' },
+  { id: 'story', label: 'Journey', key: 'nav.journey' },
+  { id: 'contact', label: 'Contact', key: 'nav.contact' },
 ];
 
 /** Persistent wayfinding: the top navbar hides while scrolling down, so this keeps "where am I" visible. */
-function SectionRail() {
+function SectionRail({ i18n }: { i18n: I18n }) {
   const [active, setActive] = useState('top');
 
   useEffect(() => {
@@ -2062,7 +2117,7 @@ function SectionRail() {
     <nav aria-label="Page sections" className="section-rail hidden xl:flex">
       {RAIL.map((item) => (
         <a key={item.id} href={`#${item.id}`} aria-current={active === item.id ? 'location' : undefined} className="rail-link">
-          <span className="rail-label">{i18n.tx(item.key)}</span>
+          <span className="rail-label">{item.key ? i18n.tx(item.key) : item.label}</span>
           <span className="rail-dot" aria-hidden="true" />
         </a>
       ))}
@@ -2162,7 +2217,7 @@ export default function Portfolio() {
       <SmoothScroll />
       <ScrollMomentum />
       <ScrollChrome />
-      <SectionRail />
+      <SectionRail i18n={i18n} />
       <div className="fixed inset-0 pointer-events-none z-[1] grain" aria-hidden="true" />
       <Navbar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} i18n={i18n} />
 
