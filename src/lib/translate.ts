@@ -75,7 +75,7 @@ const OPENROUTER_FREE_MODELS = [
   'openrouter/free',
   'google/gemma-4-31b-it:free',
   'nvidia/nemotron-3-ultra-550b-a55b:free',
-  'google/gemma-4-26b-a4b-it:free',
+
 ];
 
 export function openRouterConfigured(): boolean {
@@ -85,7 +85,7 @@ export function openRouterConfigured(): boolean {
 function openRouterModels(): string[] | null {
   if (!openRouterConfigured()) return null;
   const primary = process.env.OPENROUTER_MODEL?.trim() || OPENROUTER_FREE_MODELS[0];
-  return [primary, ...OPENROUTER_FREE_MODELS.filter((m) => m !== primary)];
+  return [primary, ...OPENROUTER_FREE_MODELS.filter((m) => m !== primary)].slice(0, 3);
 }
 
 export type ChatOutcome = {
