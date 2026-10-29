@@ -38,17 +38,17 @@ const MARQUEE_ITEMS = [
 
 const SKILLS = [
   {
-    group: 'Infrastructure',
+    group: { en: 'Infrastructure', id: 'Infrastruktur' },
     icon: <LayersIcon className="w-5 h-5" />,
-    items: ['IT Support & Troubleshooting', 'Network Administration', 'System Maintenance', 'Hardware Diagnostics'],
+    items: [{ en: 'IT Support & Troubleshooting', id: 'Dukungan IT & Pemecahan Masalah' }, { en: 'Network Administration', id: 'Administrasi Jaringan' }, { en: 'System Maintenance', id: 'Perawatan Sistem' }, { en: 'Hardware Diagnostics', id: 'Diagnostik Perangkat Keras' }],
   },
   {
-    group: 'Languages',
+    group: { en: 'Languages', id: 'Bahasa Pemrograman' },
     icon: <CodeIcon className="w-5 h-5" />,
     items: ['Next.js / TypeScript', 'JavaScript', 'Python', 'HTML / CSS', 'Tailwind CSS'],
   },
   {
-    group: 'Tools',
+    group: { en: 'Tools', id: 'Alat' },
     icon: <WrenchIcon className="w-5 h-5" />,
     items: ['Git / GitHub', 'Docker', 'Linux / Windows Server', 'PostgreSQL / MySQL'],
   },
@@ -118,7 +118,7 @@ function useNearViewport(ref: RefObject<Element | null>, margin = '40% 0px') {
   return near;
 }
 
-function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; profile: Profile; onComplete: () => void }) {
+function CinematicLoader({ reduced, profile, onComplete, lang }: { reduced: boolean; profile: Profile; onComplete: () => void; lang: string }) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
 
@@ -212,7 +212,7 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
           <span>{profile.shortName.toUpperCase()} / PORTFOLIO</span><span>{profile.locationShort.toUpperCase()}</span>
         </div>
         <div className="loader-center mx-auto w-full max-w-6xl">
-          <p data-loader-piece className="mb-5 font-mono text-[10px] font-bold tracking-[.26em] text-cyan sm:text-xs">CRAFTING YOUR EXPERIENCE</p>
+          <p data-loader-piece className="mb-5 font-mono text-[10px] font-bold tracking-[.26em] text-cyan sm:text-xs"><LocText idText="MENYIAPKAN PENGALAMAN ANDA" enText="CRAFTING YOUR EXPERIENCE" lang={lang} /></p>
           <div data-loader-piece className="loader-signal relative">
             <div className="loader-signal-ring loader-signal-ring-a" aria-hidden="true" />
             <div className="loader-signal-ring loader-signal-ring-b" aria-hidden="true" />
@@ -222,9 +222,9 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
             <span className="loader-chip loader-chip-c">SYSTEMS</span>
           </div>
           <div data-loader-piece className="mt-2 flex items-end justify-between gap-5">
-            <p className="max-w-xs font-mono text-[9px] font-bold leading-relaxed tracking-[.18em] text-on-surface-variant sm:text-[10px]">MOVE YOUR CURSOR<br />THE INTERFACE IS LISTENING</p>
+            <p className="max-w-xs font-mono text-[9px] font-bold leading-relaxed tracking-[.18em] text-on-surface-variant sm:text-[10px]">{lang === 'id' ? <>GERAKKAN KURSOR<br />ANTARMUKA SEDANG MENDENGARKAN</> : <>MOVE YOUR CURSOR<br />THE INTERFACE IS LISTENING</>}</p>
             <div className="text-right">
-              <p className="mb-1 font-mono text-[9px] font-bold tracking-[.22em] text-on-surface-variant">LOADING</p>
+              <p className="mb-1 font-mono text-[9px] font-bold tracking-[.22em] text-on-surface-variant">{lang === 'id' ? 'MEMUAT' : 'LOADING'}</p>
               <div className="font-display text-[clamp(3.6rem,10vw,8rem)] font-black leading-[.72] tracking-[-.07em] tabular-nums">{String(progress).padStart(2, '0')}<span className="text-[.3em] text-yellow">%</span></div>
             </div>
           </div>
@@ -233,7 +233,7 @@ function CinematicLoader({ reduced, profile, onComplete }: { reduced: boolean; p
           </div>
         </div>
         <div data-loader-piece className="flex items-center justify-between font-mono text-[10px] font-bold tracking-[.16em] text-on-surface-variant">
-          <span>IT SUPPORT × FULL-STACK</span><span className="flex items-center gap-2 text-active"><i className="loader-status-dot" /> SYSTEMS ONLINE</span>
+          <span>IT SUPPORT × FULL-STACK</span><span className="flex items-center gap-2 text-active"><i className="loader-status-dot" /> <LocText idText="SISTEM ONLINE" enText="SYSTEMS ONLINE" lang={lang} /></span>
         </div>
       </div>
     </div>
@@ -1326,11 +1326,11 @@ function GlobeScene({ reduced, location }: { reduced: boolean; location: string 
 
 function About({ profile, i18n }: { profile: Profile; i18n: I18n }) {
   const facts = [
-    { label: 'Name', value: profile.name },
-    { label: 'Role', value: profile.primaryRole },
-    { label: 'Location', value: profile.location },
-    { label: 'Focus', value: profile.focus },
-    { label: 'Status', value: profile.status },
+    { key: 'name', label: <LocText idText="Nama" enText="Name" lang={i18n.lang} />, value: profile.name },
+    { key: 'role', label: <LocText idText="Peran" enText="Role" lang={i18n.lang} />, value: <LocText idText={profile.primaryRole} enText={profile.primaryRoleEn} lang={i18n.lang} /> },
+    { key: 'location', label: <LocText idText="Lokasi" enText="Location" lang={i18n.lang} />, value: profile.location },
+    { key: 'focus', label: <LocText idText="Fokus" enText="Focus" lang={i18n.lang} />, value: <LocText idText={profile.focus} enText={profile.focusEn} lang={i18n.lang} /> },
+    { key: 'status', label: <LocText idText="Status" enText="Status" lang={i18n.lang} />, value: <LocText idText={profile.status} enText={profile.statusEn} lang={i18n.lang} /> },
   ];
   return (
     <section id="about" className="relative mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-36 scroll-mt-16">
@@ -1367,7 +1367,7 @@ function About({ profile, i18n }: { profile: Profile; i18n: I18n }) {
         <Reveal delay={240}>
           <dl className="fact-card border-[3px] border-ink rounded-[1.75rem] bg-yellow divide-y-[3px] divide-ink overflow-hidden text-ink">
             {facts.map((f, index) => (
-              <div key={f.label} className={`flex items-center justify-between gap-6 px-6 py-4 ${index === facts.length - 1 ? 'bg-lime' : ''}`}>
+              <div key={f.key} className={`flex items-center justify-between gap-6 px-6 py-4 ${index === facts.length - 1 ? 'bg-lime' : ''}`}>
                 <dt className="font-mono text-[10px] font-black tracking-[0.2em] text-ink/60 uppercase">
                   {f.label}
                 </dt>
@@ -1396,7 +1396,7 @@ function Skills({ i18n }: { i18n: I18n }) {
 
         <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5" staggerMs={110}>
           {SKILLS.map((skill, i) => (
-            <div key={skill.group} className="reveal-item h-full">
+            <div key={skill.group.en} className="reveal-item h-full">
               <CursorSpotlight className={`skill-card skill-card-${i + 1} rounded-[1.75rem] border-[3px] border-ink bg-surface-container/80 animated-border h-full`}>
                 <Tilt className="relative p-8 h-full overflow-hidden">
                 <div className="flex items-center justify-between mb-8">
@@ -1407,12 +1407,12 @@ function Skills({ i18n }: { i18n: I18n }) {
                     {String(i + 1).padStart(2, '0')}
                   </span>
                 </div>
-                <h3 className="font-display font-black text-xl text-cotton mb-5 relative z-[3]">{skill.group}</h3>
+                <h3 className="font-display font-black text-xl text-cotton mb-5 relative z-[3]"><LocText idText={skill.group.id} enText={skill.group.en} lang={i18n.lang} /></h3>
                 <ul className="space-y-3.5 relative z-[3]">
                   {skill.items.map((item) => (
-                    <li key={item} className="flex items-center gap-3 text-sm text-on-surface-variant group/item">
+                    <li key={typeof item === 'string' ? item : item.en} className="flex items-center gap-3 text-sm text-on-surface-variant group/item">
                       <CheckIcon className="w-4 h-4 text-primary-container shrink-0" />
-                      <span className="transition-transform duration-300 group-hover/item:translate-x-1">{item}</span>
+                      <span className="transition-transform duration-300 group-hover/item:translate-x-1">{typeof item === 'string' ? item : <LocText idText={item.id} enText={item.en} lang={i18n.lang} />}</span>
                     </li>
                   ))}
                 </ul>
@@ -1510,13 +1510,13 @@ function GitHubContributions({ profile, i18n }: { profile: Profile; i18n: I18n }
                 <GitHubIcon className="h-4 w-4" />
                 <span>{data?.username ?? username}</span>
                 <span className="h-1.5 w-1.5 rounded-full bg-lime" aria-hidden="true" />
-                <span>LIVE CALENDAR</span>
+                <span><LocText idText="KALENDER LANGSUNG" enText="LIVE CALENDAR" lang={i18n.lang} /></span>
               </div>
-              <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-surface-variant">Kontribusi publik dari GitHub, diperbarui otomatis setiap lima menit saat halaman ini terbuka.</p>
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-surface-variant"><LocText idText="Kontribusi publik dari GitHub, diperbarui otomatis setiap lima menit saat halaman ini terbuka." enText="Public contributions from GitHub, refreshed automatically every five minutes while this page is open." lang={i18n.lang} /></p>
             </div>
             <div className="shrink-0 text-left sm:text-right">
-              <div className="font-display text-4xl font-black text-cotton">{data?.total?.toLocaleString('id-ID') ?? '—'}</div>
-              <div className="font-mono text-[10px] font-bold tracking-[.16em] text-on-surface-variant/65 uppercase">contributions / last year</div>
+              <div className="font-display text-4xl font-black text-cotton">{data?.total?.toLocaleString(i18n.lang === 'id' ? 'id-ID' : 'en-US') ?? '—'}</div>
+              <div className="font-mono text-[10px] font-bold tracking-[.16em] text-on-surface-variant/65 uppercase"><LocText idText="kontribusi / tahun terakhir" enText="contributions / last year" lang={i18n.lang} /></div>
             </div>
           </div>
           {data ? (
@@ -1536,11 +1536,11 @@ function GitHubContributions({ profile, i18n }: { profile: Profile; i18n: I18n }
               </div>
             </div>
           ) : (
-            <div className="mt-7 flex min-h-28 items-center justify-center rounded-xl border border-dashed border-line-strong font-mono text-xs text-on-surface-variant/65">{error ? 'GITHUB ACTIVITY TEMPORARILY UNAVAILABLE' : 'LOADING GITHUB ACTIVITY…'}</div>
+            <div className="mt-7 flex min-h-28 items-center justify-center rounded-xl border border-dashed border-line-strong font-mono text-xs text-on-surface-variant/65">{error ? <LocText idText="AKTIVITAS GITHUB SEMENTARA TIDAK TERSEDIA" enText="GITHUB ACTIVITY TEMPORARILY UNAVAILABLE" lang={i18n.lang} /> : <LocText idText="MEMUAT AKTIVITAS GITHUB…" enText="LOADING GITHUB ACTIVITY…" lang={i18n.lang} />}</div>
           )}
             <div className="mt-5 flex flex-wrap items-center justify-between gap-4 text-[10px] font-mono font-bold tracking-[.12em] text-on-surface-variant/65 uppercase">
-            <span>{data ? `Synced ${new Date(data.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}` : 'Syncing with GitHub'}</span>
-            <a href={profile.github} target="_blank" rel="noreferrer" className="font-black text-cyan underline decoration-cyan/40 underline-offset-4 hover:text-cotton">Open GitHub profile ↗</a>
+            <span>{data ? <LocText idText={`Disinkronkan ${new Date(data.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`} enText={`Synced ${new Date(data.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`} lang={i18n.lang} /> : <LocText idText="Menyinkronkan dengan GitHub" enText="Syncing with GitHub" lang={i18n.lang} />}</span>
+            <a href={profile.github} target="_blank" rel="noreferrer" className="font-black text-cyan underline decoration-cyan/40 underline-offset-4 hover:text-cotton"><LocText idText="Buka profil GitHub ↗" enText="Open GitHub profile ↗" lang={i18n.lang} /></a>
             </div>
           </div>
         </PhysicsWrapper>
@@ -1608,7 +1608,7 @@ function Certificates({ i18n }: { i18n: I18n }) {
           const isPdf = certificate.name.toLowerCase().endsWith('.pdf');
           return <Reveal key={certificate.name} delay={index * 80}><article className="certificate-card group relative overflow-hidden rounded-[1.75rem] border-[3px] border-ink bg-surface-container/80 p-5 sm:p-6">
             <div className="certificate-preview relative mb-6 flex aspect-[16/9] items-center justify-center overflow-hidden rounded-xl border-2 border-ink bg-surface"><span className="certificate-watermark" aria-hidden="true">{isPdf ? 'PDF' : 'CERT'}</span>{isPdf ? <div className="relative z-[1] text-center"><div className="font-display text-5xl font-black text-pink">PDF</div><div className="mt-2 font-mono text-[10px] tracking-[.2em] text-on-surface-variant">CREDENTIAL FILE</div></div> : <img src={certificate.url} alt={`${certificate.title || 'Certificate'} preview`} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />}</div>
-            <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] font-bold tracking-[.18em] text-cyan">{certificate.issuer || 'CERTIFICATION'} {certificate.year ? `· ${certificate.year}` : ''}</p><h3 className="mt-2 font-display text-2xl font-black tracking-tight text-cotton"><LocText idText={certificate.title || toTitle(certificate.name)} enText={certificate.titleEn} lang={i18n.lang} /></h3></div><span className="certificate-mark" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span></div>{certificate.desc ? <p className="mt-4 text-sm leading-relaxed text-on-surface-variant"><LocText idText={certificate.desc} enText={certificate.descEn} lang={i18n.lang} /></p> : null}<div className="mt-6 flex flex-wrap gap-3"><a href={certificate.url} target="_blank" rel="noreferrer" className="cartoon-button inline-flex min-h-11 items-center rounded-full px-4 py-2 text-xs font-black">View certificate</a>{certificate.verifyUrl ? <a href={certificate.verifyUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-line-strong px-4 py-2 text-xs font-bold text-cyan hover:border-cyan">Verify credential</a> : null}</div>
+            <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] font-bold tracking-[.18em] text-cyan">{certificate.issuer || (i18n.lang === 'id' ? 'SERTIFIKASI' : 'CERTIFICATION')} {certificate.year ? `· ${certificate.year}` : ''}</p><h3 className="mt-2 font-display text-2xl font-black tracking-tight text-cotton"><LocText idText={certificate.title || toTitle(certificate.name)} enText={certificate.titleEn} lang={i18n.lang} /></h3></div><span className="certificate-mark" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span></div>{certificate.desc ? <p className="mt-4 text-sm leading-relaxed text-on-surface-variant"><LocText idText={certificate.desc} enText={certificate.descEn} lang={i18n.lang} /></p> : null}<div className="mt-6 flex flex-wrap gap-3"><a href={certificate.url} target="_blank" rel="noreferrer" className="cartoon-button inline-flex min-h-11 items-center rounded-full px-4 py-2 text-xs font-black"><LocText idText="Lihat sertifikat" enText="View certificate" lang={i18n.lang} /></a>{certificate.verifyUrl ? <a href={certificate.verifyUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-line-strong px-4 py-2 text-xs font-bold text-cyan hover:border-cyan"><LocText idText="Verifikasi kredensial" enText="Verify credential" lang={i18n.lang} /></a> : null}</div>
           </article></Reveal>;
         })}</div>}
       </div>
@@ -1743,43 +1743,43 @@ function Projects({ i18n }: { i18n: I18n }) {
 const WORLD_STOPS = [
   {
     img: '/foto/WhatsApp%20Image%202026-07-22%20at%2009.57.08.webp',
-    eyebrow: '01 · The bench',
-    short: 'The bench',
-    title: 'From the workbench up.',
-    body: 'Every system I touch gets the same treatment — diagnosed, stabilized, documented.',
-    tags: ['Support', 'Troubleshooting', 'Maintenance'],
+    eyebrow: { en: '01 · The bench', id: '01 · Meja kerja' },
+    short: { en: 'The bench', id: 'Meja kerja' },
+    title: { en: 'From the workbench up.', id: 'Dari meja kerja ke atas.' },
+    body: { en: 'Every system I touch gets the same treatment: diagnosed, stabilized, documented.', id: 'Setiap sistem yang saya sentuh mendapat perlakuan yang sama: didiagnosis, distabilkan, didokumentasikan.' },
+    tags: [{ en: 'Support', id: 'Dukungan' }, { en: 'Troubleshooting', id: 'Pemecahan Masalah' }, { en: 'Maintenance', id: 'Perawatan' }],
     accent: '#c6ff33',
   },
   {
     img: '/foto/IMG_20260709_130641.webp',
-    eyebrow: '02 · The code',
-    short: 'The code',
-    title: 'Where maintenance meets software.',
-    body: 'Support tools, dashboards, and full apps — shipped with Next.js & TypeScript.',
+    eyebrow: { en: '02 · The code', id: '02 · Kode' },
+    short: { en: 'The code', id: 'Kode' },
+    title: { en: 'Where maintenance meets software.', id: 'Saat perawatan bertemu perangkat lunak.' },
+    body: { en: 'Support tools, dashboards, and full apps, shipped with Next.js & TypeScript.', id: 'Alat pendukung, dasbor, dan aplikasi penuh, dibangun dengan Next.js & TypeScript.' },
     tags: ['Next.js', 'TypeScript', 'Full-Stack'],
     accent: '#7d39eb',
   },
   {
     img: '/foto/WhatsApp%20Image%202026-07-09%20at%2012.06.57.webp',
-    eyebrow: '03 · On the floor',
-    short: 'On the floor',
-    title: 'Hands-on support.',
-    body: 'Close to the end user, on-site when it counts, calm under pressure.',
-    tags: ['IT Support', 'Network', 'On-site'],
+    eyebrow: { en: '03 · On the floor', id: '03 · Di lapangan' },
+    short: { en: 'On the floor', id: 'Di lapangan' },
+    title: { en: 'Hands-on support.', id: 'Dukungan langsung di lokasi.' },
+    body: { en: 'Close to the end user, on-site when it counts, calm under pressure.', id: 'Dekat dengan pengguna akhir, hadir di lokasi saat dibutuhkan, tenang di bawah tekanan.' },
+    tags: [{ en: 'IT Support', id: 'Dukungan IT' }, { en: 'Network', id: 'Jaringan' }, { en: 'On-site', id: 'Di Lokasi' }],
     accent: '#ffffff',
   },
   {
     img: '/foto/WhatsApp%20Image%202026-07-11%20at%2012.08.26.webp',
-    eyebrow: '04 · The infrastructure',
-    short: 'Infrastructure',
-    title: 'Keeping systems alive.',
-    body: 'Servers, switches, and the connections between them — stable and monitored.',
-    tags: ['Infrastructure', 'Server', 'Network'],
+    eyebrow: { en: '04 · The infrastructure', id: '04 · Infrastruktur' },
+    short: { en: 'Infrastructure', id: 'Infrastruktur' },
+    title: { en: 'Keeping systems alive.', id: 'Menjaga sistem tetap hidup.' },
+    body: { en: 'Servers, switches, and the connections between them, stable and monitored.', id: 'Server, switch, dan koneksi di antaranya, stabil dan terpantau.' },
+    tags: [{ en: 'Infrastructure', id: 'Infrastruktur' }, 'Server', { en: 'Network', id: 'Jaringan' }],
     accent: '#a678ff',
   },
 ];
 
-function WorldScroll() {
+function WorldScroll({ i18n }: { i18n: I18n }) {
   const sectionRef = useRef<HTMLElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -1928,42 +1928,42 @@ function WorldScroll() {
         <div className="absolute inset-0 world-grid pointer-events-none" aria-hidden="true" />
         <div className="absolute left-5 sm:left-8 top-24 z-20 flex items-center gap-4 font-mono text-[10px] sm:text-xs font-bold tracking-[0.22em] text-on-surface-variant">
           <span className="text-yellow">06</span>
-          <span>SCROLL THE WORLD</span>
+          <span><LocText idText="JELAJAHI DUNIA" enText="SCROLL THE WORLD" lang={i18n.lang} /></span>
           <span className="hidden sm:block w-24 h-px bg-line-strong" />
         </div>
         <div ref={trackRef} className="world-track relative flex items-stretch gap-8 sm:gap-12 px-[7vw] will-change-transform">
           <article className="world-intro shrink-0 flex flex-col justify-center w-[84vw] lg:w-[62vw] xl:w-[48vw] pr-6">
-            <span className="world-kicker">FIELD NOTES / 2026</span>
+            <span className="world-kicker"><LocText idText="CATATAN LAPANGAN / 2026" enText="FIELD NOTES / 2026" lang={i18n.lang} /></span>
             <h2 className="font-display font-black tracking-[-0.055em] text-[clamp(3.4rem,8vw,7.8rem)] leading-[.9] text-cotton mt-5">
-              REAL<br />WORK.<br /><span className="text-pink">REAL</span> WORLD.
+              {i18n.lang === 'id' ? <>KERJA<br />NYATA.<br /><span className="text-pink">DUNIA</span> NYATA.</> : i18n.lang === 'en' ? <>REAL<br />WORK.<br /><span className="text-pink">REAL</span> WORLD.</> : <LocText idText="Kerja nyata. Dunia nyata." enText="Real work. Real world." lang={i18n.lang} />}
             </h2>
             <p className="mt-7 max-w-lg text-on-surface-variant text-base sm:text-lg leading-relaxed">
-              Drag your eyes sideways while the page moves down. A small world tour through the systems, code, and hands-on work behind every result.
+              <LocText idText="Gerakkan pandangan menyamping sementara halaman bergerak ke bawah. Tur dunia kecil melalui sistem, kode, dan kerja langsung di balik setiap hasil." enText="Drag your eyes sideways while the page moves down. A small world tour through the systems, code, and hands-on work behind every result." lang={i18n.lang} />
             </p>
             <div className="mt-8 flex items-center gap-3 font-mono text-[11px] font-bold tracking-[.18em] text-cyan">
-              KEEP SCROLLING <span className="text-2xl">→</span>
+              <LocText idText="TERUS GULIR" enText="KEEP SCROLLING" lang={i18n.lang} /> <span className="text-2xl">→</span>
             </div>
           </article>
 
           {WORLD_STOPS.map((scene, index) => (
             <article
-              key={scene.eyebrow}
+              key={scene.eyebrow.en}
               className={`world-card world-card-${index + 1} shrink-0 w-[84vw] sm:w-[70vw] lg:w-[56vw] xl:w-[46rem]`}
               style={{ '--scene-accent': scene.accent } as CSSProperties}
             >
               <div className="world-card-image">
                 <div className="world-dim" aria-hidden="true" />
                 <div className="world-parallax">
-                  <SmartImage src={scene.img} alt={`${scene.title} — field work`} loading="eager" className="absolute inset-0 w-full h-full object-cover" fallback={<ProjectFallback name={scene.title} />} />
+                  <SmartImage src={scene.img} alt={`${scene.title.en} — field work`} loading="eager" className="absolute inset-0 w-full h-full object-cover" fallback={<ProjectFallback name={scene.title.en} />} />
                 </div>
                 <div className="world-card-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
               </div>
               <div className="world-card-copy">
-                <p className="font-mono text-[10px] sm:text-xs font-bold tracking-[.18em] uppercase" style={{ color: scene.accent }}>{scene.eyebrow}</p>
-                <h3 className="font-display font-black text-2xl sm:text-4xl tracking-[-.03em] text-cotton mt-3">{scene.title}</h3>
-                <p className="text-on-surface-variant mt-3 leading-relaxed max-w-xl">{scene.body}</p>
+                <p className="font-mono text-[10px] sm:text-xs font-bold tracking-[.18em] uppercase" style={{ color: scene.accent }}><LocText idText={scene.eyebrow.id} enText={scene.eyebrow.en} lang={i18n.lang} /></p>
+                <h3 className="font-display font-black text-2xl sm:text-4xl tracking-[-.03em] text-cotton mt-3"><LocText idText={scene.title.id} enText={scene.title.en} lang={i18n.lang} /></h3>
+                <p className="text-on-surface-variant mt-3 leading-relaxed max-w-xl"><LocText idText={scene.body.id} enText={scene.body.en} lang={i18n.lang} /></p>
                 <div className="flex flex-wrap gap-2 mt-5">
-                  {scene.tags.map((tag) => <span key={tag} className="world-tag">{tag}</span>)}
+                  {scene.tags.map((tag) => <span key={typeof tag === 'string' ? tag : tag.en} className="world-tag">{typeof tag === 'string' ? tag : <LocText idText={tag.id} enText={tag.en} lang={i18n.lang} />}</span>)}
                 </div>
               </div>
             </article>
@@ -1971,10 +1971,10 @@ function WorldScroll() {
 
           <article className="world-finale shrink-0 w-[84vw] lg:w-[48vw] flex flex-col items-start justify-center pr-[8vw]">
             <div className="finale-face" aria-hidden="true"><span>•</span><span>ᴗ</span><span>•</span></div>
-            <p className="world-kicker mt-7">FINAL DESTINATION</p>
-            <h2 className="font-display font-black tracking-[-.05em] text-4xl sm:text-6xl text-cotton mt-4">YOUR NEXT<br /><span className="text-lime">BIG THING.</span></h2>
+            <p className="world-kicker mt-7"><LocText idText="TUJUAN AKHIR" enText="FINAL DESTINATION" lang={i18n.lang} /></p>
+            <h2 className="font-display font-black tracking-[-.05em] text-4xl sm:text-6xl text-cotton mt-4">{i18n.lang === 'id' ? <>PROYEK BESAR<br /><span className="text-lime">ANDA BERIKUTNYA.</span></> : i18n.lang === 'en' ? <>YOUR NEXT<br /><span className="text-lime">BIG THING.</span></> : <LocText idText="Proyek besar Anda berikutnya." enText="Your next big thing." lang={i18n.lang} />}</h2>
             <a href="#contact" className="cartoon-button cartoon-button-primary inline-flex items-center gap-2 mt-8 rounded-full px-7 py-3.5 text-sm font-black">
-              Let&rsquo;s make it real <ArrowUpRightIcon className="w-4 h-4" />
+              <LocText idText="Wujudkan sekarang" enText="Let's make it real" lang={i18n.lang} /> <ArrowUpRightIcon className="w-4 h-4" />
             </a>
           </article>
         </div>
@@ -1982,16 +1982,16 @@ function WorldScroll() {
         <nav className="world-steps" aria-label="Journey scenes">
           {WORLD_STOPS.map((scene, index) => (
             <button
-              key={scene.short}
+              key={scene.short.en}
               type="button"
               onClick={() => jumpTo(index)}
               aria-current={active === index ? 'step' : undefined}
-              aria-label={`Scene ${index + 1}: ${scene.short}`}
+              aria-label={`Scene ${index + 1}: ${scene.short.en}`}
               className="world-step"
               style={{ '--scene-accent': scene.accent } as CSSProperties}
             >
               <span className="world-step-count">{String(index + 1).padStart(2, '0')}</span>
-              <span className="world-step-name">{scene.short}</span>
+              <span className="world-step-name"><LocText idText={scene.short.id} enText={scene.short.en} lang={i18n.lang} /></span>
             </button>
           ))}
         </nav>
@@ -2049,7 +2049,7 @@ function Contact({ profile, i18n }: { profile: Profile; i18n: I18n }) {
                 ))}
                 {profile.cvFileName ? (
                   <a href="/api/cv" download className="inline-flex items-center gap-2.5 rounded-full border-2 border-ink bg-yellow px-5 py-2.5 text-sm font-black text-ink shadow-[3px_4px_0_var(--color-ink)] transition-transform hover:-translate-y-1">
-                    Download CV <span aria-hidden="true">↓</span>
+                    <LocText idText="Unduh CV" enText="Download CV" lang={i18n.lang} /> <span aria-hidden="true">↓</span>
                   </a>
                 ) : null}
               </div>
@@ -2084,7 +2084,7 @@ function Contact({ profile, i18n }: { profile: Profile; i18n: I18n }) {
 }
 
 const RAIL: { id: string; label: string; key: UiKey | null }[] = [
-  { id: 'top', label: 'Intro', key: null },
+  { id: 'top', label: 'Intro', key: 'nav.intro' },
   { id: 'about', label: 'About', key: 'nav.about' },
   { id: 'skills', label: 'Skills', key: 'nav.skills' },
   { id: 'certificates', label: 'Certificates', key: 'nav.certificates' },
@@ -2202,7 +2202,7 @@ export default function Portfolio() {
 
   return (
     <div className="min-h-screen text-on-surface relative">
-      {!introReady && <CinematicLoader reduced={reduced} profile={profile} onComplete={completeIntro} />}
+      {!introReady && <CinematicLoader reduced={reduced} profile={profile} onComplete={completeIntro} lang={i18n.lang} />}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
         <div
           className="ambient-orb ambient-orb-a absolute top-[-22%] right-[-12%] w-[58vw] h-[58vw] rounded-full"
@@ -2229,7 +2229,7 @@ export default function Portfolio() {
         <GitHubContributions profile={profile} i18n={i18n} />
         <Certificates i18n={i18n} />
         <Projects i18n={i18n} />
-        <WorldScroll />
+        <WorldScroll i18n={i18n} />
         <Contact profile={profile} i18n={i18n} />
       </main>
 
@@ -2248,7 +2248,7 @@ export default function Portfolio() {
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="inline-flex items-center gap-2 font-mono text-[11px] text-on-surface-variant/60 hover:text-primary-container transition-colors"
           >
-            Back to top
+            <LocText idText="Kembali ke atas" enText="Back to top" lang={i18n.lang} />
             <ArrowUpIcon className="w-3.5 h-3.5" />
           </button>
         </div>
