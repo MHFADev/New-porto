@@ -74,8 +74,14 @@ const LANG_NAME: Record<string, string> = {
 
 /* ---------------- OpenRouter (the only provider) ---------------- */
 
+// OpenRouter accepts at most 3 entries in the fallback `models` array;
+// sending 4 makes every request fail with HTTP 400 (verified in production).
+// Pinned, translation-capable free models. The 'openrouter/free' auto-router
+// is deliberately NOT used: in production it routed one request to a
+// content-safety classifier that answered 'User Safety: safe' instead of
+// translating. Gemma instruction models are strong at ID/EN/JP translation.
 const OPENROUTER_FREE_MODELS = [
-    'google/gemma-4-31b-it:free',
+  'google/gemma-4-31b-it:free',
   'google/gemma-4-26b-a4b-it:free',
   'nvidia/nemotron-3-ultra-550b-a55b:free',
 ];
@@ -86,7 +92,12 @@ export function openRouterConfigured(): boolean {
 
 function openRouterModels(): string[] | null {
   if (!openRouterConfigured()) return null;
-  const primary = process.env.OPENROUTER_MODEL?.trim() || OPENROUTER_FREE_MODELS[0];
+  // FREE-ONLY, enforced in code: a configured model is honoured solely when it
+  // is a ':free' variant, so this integration can never spend money. A paid
+  // model id in OPENROUTER_MODEL is ignored; the pinned free model is used.
+  const requested = process.env.OPENROUTER_MODEL?.trim();
+  const primary = requested && requested.endsWith(':free') ? requested : OPENROUTER_FREE_MODELS[0];
+  // OpenRouter rejects a fallback list longer than 3 with HTTP 400.
   return [primary, ...OPENROUTER_FREE_MODELS.filter((m) => m !== primary)].slice(0, 3);
 }
 
@@ -158,6 +169,7 @@ const TARGET_SCRIPT: Record<string, RegExp> = {
   ar: /[\u0600-\u06ff]/,
 };
 
+/** For script-distinct targets (ja/ko/zh/ar), a real translation must contain target-script characters. */
 function scriptOk(out: string, to: string): boolean {
   const re = TARGET_SCRIPT[to];
   return !re || re.test(out);
