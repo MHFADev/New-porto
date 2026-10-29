@@ -26,7 +26,7 @@ import type { Profile } from '@/lib/profile';
  */
 
 const FRAME_COUNT = 49;
-const frameSrc = (i: number) => `/hero-frames/frame_${String(i + 1).padStart(3, '0')}.webp`;
+const frameSrc = (i: number) => `/hero-frames/frame_${String(i + 1).padStart(3, '0')}.jpg`;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const fade = (p: number, from: number, to: number) => clamp01((p - from) / (to - from));
