@@ -48,7 +48,7 @@ export type UiKey = keyof typeof UI;
 const CHOICE_KEY = 'pf-lang-choice';
 const MT_CACHE_KEY = 'pf-mt-cache-v1';
 
-/* ---------- machine translation (via /api/translate provider chain) ---------- */
+/* ---------- machine translation (via /api/translate, OpenRouter) ---------- */
 
 type MtCache = Record<string, string>;
 let mtCache: MtCache | null = null;
@@ -83,9 +83,8 @@ export function mtTranslate(text: string, target: string, source: 'en' | 'id' = 
   const job = (async () => {
     try {
       let out: string | null = null;
-      // Primary: the site's own /api/translate route, which runs the free
-      // provider chain server-side (self-hosted LibreTranslate when the owner
-      // configures it, then Google's free endpoint, then MyMemory).
+      // The site's own /api/translate route, powered by OpenRouter LLM
+      // free models on the server. Failures keep the original text.
       try {
         const res = await fetch('/api/translate', {
           method: 'POST',
@@ -99,20 +98,6 @@ export function mtTranslate(text: string, target: string, source: 'en' | 'id' = 
         }
       } catch {
         /* fall through to the direct provider below */
-      }
-      // Backup: MyMemory called directly (covers a route outage).
-      if (!out) {
-        try {
-          const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean.slice(0, 480))}&langpair=${source}|${target}`;
-          const res = await fetch(url);
-          if (res.ok) {
-            const data = (await res.json()) as { responseData?: { translatedText?: string }; responseStatus?: number | string };
-            const t = data.responseData?.translatedText?.trim();
-            if (t && Number(data.responseStatus) === 200 && t.toLowerCase() !== clean.toLowerCase()) out = t;
-          }
-        } catch {
-          /* keep out = null */
-        }
       }
       if (!out) return text;
       cache[key] = out;
