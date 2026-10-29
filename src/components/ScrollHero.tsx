@@ -46,7 +46,7 @@ function CtaRow({ lang }: { lang: string }) {
     <div className="flex flex-wrap items-center gap-3">
       <a
         href="#projects"
-        className="group inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold tracking-wide text-[#10182b] transition-transform duration-300 hover:scale-[1.03]"
+        className="group inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold tracking-wide text-black transition-transform duration-300 hover:scale-[1.03]"
       >
         <LocText idText="Lihat karya saya" enText="View my work" lang={lang} />
         <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -63,24 +63,24 @@ function CtaRow({ lang }: { lang: string }) {
 
 function IntroCard({ profile, lang }: { profile: Profile; lang: string }) {
   return (
-    <div className="max-w-2xl rounded-[2rem] border border-white/15 bg-[#0b101f]/40 px-7 py-8 shadow-[0_32px_80px_-32px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:px-10 sm:py-10">
+    <div className="max-w-2xl rounded-[2rem] border border-white/15 bg-[#0a0614]/40 px-7 py-8 shadow-[0_32px_80px_-32px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:px-10 sm:py-10">
       <div className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/10 px-4 py-1.5">
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-lime opacity-60" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-lime" />
         </span>
         <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/85"><LocText idText={profile.status} enText={profile.statusEn} lang={lang} /></span>
       </div>
 
-      <p className="mb-4 font-mono text-[11px] font-bold uppercase tracking-[0.26em] text-cyan-200/90 sm:text-xs">
+      <p className="mb-4 font-mono text-[11px] font-bold uppercase tracking-[0.26em] text-lime/90 sm:text-xs">
         {profile.name} · {profile.locationShort}
       </p>
 
       <h1 className="mb-5 font-display text-[clamp(2.6rem,6.2vw,4.6rem)] font-black leading-[1.02] tracking-[-0.03em] text-white">
         I keep{' '}
-        <span className="bg-gradient-to-r from-[#ff5cbb] to-[#42dcff] bg-clip-text text-transparent">systems</span>{' '}
+        <span className="bg-gradient-to-r from-[#7d39eb] to-[#c6ff33] bg-clip-text text-transparent">systems</span>{' '}
         happy &amp;{' '}
-        <span className="bg-gradient-to-r from-[#ff5cbb] to-[#42dcff] bg-clip-text text-transparent">ideas</span>{' '}
+        <span className="bg-gradient-to-r from-[#7d39eb] to-[#c6ff33] bg-clip-text text-transparent">ideas</span>{' '}
         alive.
       </h1>
 
@@ -94,8 +94,8 @@ function IntroCard({ profile, lang }: { profile: Profile; lang: string }) {
 
 function OutroCard({ profile, lang }: { profile: Profile; lang: string }) {
   return (
-    <div className="w-full max-w-lg rounded-[1.5rem] border border-white/15 bg-[#0b101f]/45 px-6 py-6 text-center shadow-[0_24px_60px_-24px_rgba(0,0,0,0.8)] backdrop-blur-2xl sm:px-8">
-      <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-200/90">
+    <div className="w-full max-w-lg rounded-[1.5rem] border border-white/15 bg-[#0a0614]/45 px-6 py-6 text-center shadow-[0_24px_60px_-24px_rgba(0,0,0,0.8)] backdrop-blur-2xl sm:px-8">
+      <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-lime/90">
         <LocText idText={profile.focus} enText={profile.focusEn} lang={lang} />
       </p>
       <p className="mb-5 font-display text-xl font-bold leading-snug text-white sm:text-2xl">
@@ -240,10 +240,10 @@ export default function ScrollHero({ reduced, profile, lang }: { reduced: boolea
 
   if (reduced) {
     return (
-      <section id="top" className="relative flex min-h-svh items-center overflow-hidden bg-[#0b101f]">
+      <section id="top" className="relative flex min-h-svh items-center overflow-hidden bg-[#050208]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={frameSrc(0)} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0b101f]/70 via-[#0b101f]/25 to-transparent" aria-hidden="true" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050208]/70 via-[#050208]/25 to-transparent" aria-hidden="true" />
         <div className="relative mx-auto w-full max-w-[82rem] px-5 py-28 sm:px-8">
           <IntroCard profile={profile} lang={lang} />
         </div>
@@ -260,9 +260,9 @@ export default function ScrollHero({ reduced, profile, lang }: { reduced: boolea
           style={{ backgroundImage: `url(${frameSrc(0)})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
           aria-hidden="true"
         />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[#0b101f]/60 to-transparent" aria-hidden="true" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#151329] via-[#151329]/35 to-transparent" aria-hidden="true" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_45%,transparent_55%,rgba(5,8,18,0.42)_100%)]" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[#050208]/60 to-transparent" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#000000] via-[#000000]/35 to-transparent" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_45%,transparent_55%,rgba(2,0,8,0.45)_100%)]" aria-hidden="true" />
 
         <div ref={introRef} className="absolute inset-0 flex items-center">
           <div className="mx-auto w-full max-w-[82rem] px-5 sm:px-8">
@@ -282,7 +282,7 @@ export default function ScrollHero({ reduced, profile, lang }: { reduced: boolea
         </div>
 
         <div className="absolute inset-x-0 bottom-0 h-[3px] bg-white/10" aria-hidden="true">
-          <div ref={barRef} className="h-full w-full origin-left bg-[#42dcff]" style={{ transform: 'scaleX(0)' }} />
+          <div ref={barRef} className="h-full w-full origin-left bg-lime" style={{ transform: 'scaleX(0)' }} />
         </div>
       </div>
 
