@@ -12,6 +12,7 @@ export { LANG_OPTIONS };
  */
 export const UI = {
   'nav.intro': { en: 'Intro', id: 'Intro' },
+  'nav.more': { en: 'More', id: 'Lainnya' },
   'nav.about': { en: 'About', id: 'Tentang' },
   'nav.skills': { en: 'Skills', id: 'Keahlian' },
   'nav.activity': { en: 'Activity', id: 'Aktivitas' },
