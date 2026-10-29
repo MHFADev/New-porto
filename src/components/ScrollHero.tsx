@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { Profile } from '@/lib/profile';
+import { LocText } from '@/lib/i18n';
 
 /*
  * ScrollHero: scroll-scrubbed frame sequence (49 frames, camera dives into a CRT
@@ -40,27 +41,27 @@ function ArrowUpRight({ className }: { className?: string }) {
   );
 }
 
-function CtaRow() {
+function CtaRow({ lang }: { lang: string }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <a
         href="#projects"
         className="group inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold tracking-wide text-[#10182b] transition-transform duration-300 hover:scale-[1.03]"
       >
-        View my work
+        <LocText idText="Lihat karya saya" enText="View my work" lang={lang} />
         <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       </a>
       <a
         href="#contact"
         className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-bold tracking-wide text-white transition-colors duration-300 hover:bg-white/20"
       >
-        Get in touch
+        <LocText idText="Hubungi saya" enText="Get in touch" lang={lang} />
       </a>
     </div>
   );
 }
 
-function IntroCard({ profile }: { profile: Profile }) {
+function IntroCard({ profile, lang }: { profile: Profile; lang: string }) {
   return (
     <div className="max-w-2xl rounded-[2rem] border border-white/15 bg-[#0b101f]/40 px-7 py-8 shadow-[0_32px_80px_-32px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:px-10 sm:py-10">
       <div className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/10 px-4 py-1.5">
@@ -68,7 +69,7 @@ function IntroCard({ profile }: { profile: Profile }) {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-60" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
         </span>
-        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/85">{profile.status}</span>
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/85"><LocText idText={profile.status} enText={profile.statusEn} lang={lang} /></span>
       </div>
 
       <p className="mb-4 font-mono text-[11px] font-bold uppercase tracking-[0.26em] text-cyan-200/90 sm:text-xs">
@@ -83,31 +84,31 @@ function IntroCard({ profile }: { profile: Profile }) {
         alive.
       </h1>
 
-      <p className="mb-3 font-display text-base font-medium text-white/85 sm:text-lg">{profile.primaryRole}</p>
-      <p className="mb-8 max-w-lg text-sm leading-relaxed text-white/70 sm:text-base">{profile.heroIntro}</p>
+      <p className="mb-3 font-display text-base font-medium text-white/85 sm:text-lg"><LocText idText={profile.primaryRole} enText={profile.primaryRoleEn} lang={lang} /></p>
+      <p className="mb-8 max-w-lg text-sm leading-relaxed text-white/70 sm:text-base"><LocText idText={profile.heroIntro} enText={profile.heroIntroEn} lang={lang} /></p>
 
-      <CtaRow />
+      <CtaRow lang={lang} />
     </div>
   );
 }
 
-function OutroCard({ profile }: { profile: Profile }) {
+function OutroCard({ profile, lang }: { profile: Profile; lang: string }) {
   return (
     <div className="w-full max-w-lg rounded-[1.5rem] border border-white/15 bg-[#0b101f]/45 px-6 py-6 text-center shadow-[0_24px_60px_-24px_rgba(0,0,0,0.8)] backdrop-blur-2xl sm:px-8">
       <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-200/90">
-        {profile.focus}
+        <LocText idText={profile.focus} enText={profile.focusEn} lang={lang} />
       </p>
       <p className="mb-5 font-display text-xl font-bold leading-snug text-white sm:text-2xl">
-        You made it to the screen. The work is one click away.
+        <LocText idText="Kamu sampai di layarnya. Karyanya tinggal satu klik lagi." enText="You made it to the screen. The work is one click away." lang={lang} />
       </p>
       <div className="flex justify-center">
-        <CtaRow />
+        <CtaRow lang={lang} />
       </div>
     </div>
   );
 }
 
-export default function ScrollHero({ reduced, profile }: { reduced: boolean; profile: Profile }) {
+export default function ScrollHero({ reduced, profile, lang }: { reduced: boolean; profile: Profile; lang: string }) {
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const introRef = useRef<HTMLDivElement>(null);
@@ -244,7 +245,7 @@ export default function ScrollHero({ reduced, profile }: { reduced: boolean; pro
         <img src={frameSrc(0)} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0b101f]/70 via-[#0b101f]/25 to-transparent" aria-hidden="true" />
         <div className="relative mx-auto w-full max-w-[82rem] px-5 py-28 sm:px-8">
-          <IntroCard profile={profile} />
+          <IntroCard profile={profile} lang={lang} />
         </div>
       </section>
     );
@@ -265,16 +266,16 @@ export default function ScrollHero({ reduced, profile }: { reduced: boolean; pro
 
         <div ref={introRef} className="absolute inset-0 flex items-center">
           <div className="mx-auto w-full max-w-[82rem] px-5 sm:px-8">
-            <IntroCard profile={profile} />
+            <IntroCard profile={profile} lang={lang} />
           </div>
         </div>
 
         <div ref={outroRef} className="absolute inset-x-0 bottom-[6%] flex justify-center px-5" style={{ opacity: 0, visibility: 'hidden' }}>
-          <OutroCard profile={profile} />
+          <OutroCard profile={profile} lang={lang} />
         </div>
 
         <div ref={hintRef} className="pointer-events-none absolute bottom-9 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 text-white/70">
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.32em]">Scroll to dive in</span>
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.32em]"><LocText idText="Scroll untuk masuk" enText="Scroll to dive in" lang={lang} /></span>
           <span className="relative block h-9 w-px overflow-hidden bg-white/15">
             <span className="absolute inset-x-0 top-0 h-1/2 animate-[scrollhint_1.6s_ease-in-out_infinite] bg-white/80" />
           </span>
