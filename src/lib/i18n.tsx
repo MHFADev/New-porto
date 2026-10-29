@@ -11,6 +11,7 @@ export { LANG_OPTIONS };
  * English entry at runtime (see useI18n / LocText) and cached locally.
  */
 export const UI = {
+  'nav.intro': { en: 'Intro', id: 'Intro' },
   'nav.about': { en: 'About', id: 'Tentang' },
   'nav.skills': { en: 'Skills', id: 'Keahlian' },
   'nav.activity': { en: 'Activity', id: 'Aktivitas' },
