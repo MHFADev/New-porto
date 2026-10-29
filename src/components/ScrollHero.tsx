@@ -1,36 +1,49 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Profile } from '@/lib/profile';
 import { LocText } from '@/lib/i18n';
 
 /*
- * ScrollHero: scroll-scrubbed frame sequence (49 frames, camera dives into a CRT
- * monitor and lands on a "Portofolio" title screen).
+ * ScrollHero: scroll-scrubbed frame sequence (49 frames, camera dives into a
+ * CRT monitor and lands on a "Portofolio" title screen).
  *
- * Smoothness comes from three mechanisms, not from more frames:
- *  1. Sub-frame blending: the fractional frame position draws frame N at full
- *     opacity and frame N+1 at alpha = fraction, so motion is continuous
- *     instead of 49 visible steps.
- *  2. Frame-rate independent exponential damping on the scroll position, so
- *     the camera glides identically on 60Hz and 120Hz displays.
- *  3. Every frame is fetched and decode()d up front, so the draw loop never
- *     waits on the network or the image decoder mid-scroll.
+ * The frame engine is unchanged: sub-frame blending, frame-rate independent
+ * exponential damping, and every frame decode()d up front.
  *
- * Design notes (antislop pass):
- *  - Glass is used on exactly one surface per phase (the copy card) because
- *    the card must stay readable over a moving photographic background;
- *    controls inside the card use flat translucent fills, no nested blur.
- *  - The pink-to-cyan gradient appears once, on the headline keywords, in the
- *    site's own palette; the progress hairline is a single accent (cyan).
- *  - No em dashes in copy. CTAs point at real sections (#projects, #contact).
+ * Layout (2026 redesign): the monitor is the hero object and the UI frames it.
+ *  - At rest the canvas is shifted right and slightly scaled so the monitor
+ *    sits in the right half of the viewport; the offset eases back to zero by
+ *    SHIFT_SETTLE progress so the zoom ends perfectly centred.
+ *  - Copy lives in a plain left column over a left-to-right scrim, no card.
+ *  - Scene B is a borderless "terminal dock" in the lower third of the glass.
+ *  - One progress indicator only: the site-wide gradient hairline at the top
+ *    of the page (this component draws no bar of its own).
  */
+
+// ---------------------------------------------------------------------------
+// Tuning knobs. MONITOR_* describe where the monitor sits in the frames: it
+// is assumed to be horizontally centred (~50% of the frame width) in frame 1,
+// so shifting the canvas right by MONITOR_SHIFT_X of the viewport width puts
+// its centre near 66% of the viewport. SCRIM_OPACITY is mirrored by the
+// --hero-scrim-opacity CSS variable in globals.css.
+// ---------------------------------------------------------------------------
+const MONITOR_SHIFT_X = 0.16;
+const MONITOR_SCALE = 1.08;
+const SHIFT_SETTLE = 0.35;
+const INTRO_FADE_END = 0.4;
+const DOCK_START = 0.75;
+const DOCK_FADE_END = 0.88;
 
 const FRAME_COUNT = 49;
 const frameSrc = (i: number) => `/hero-frames/frame_${String(i + 1).padStart(3, '0')}.jpg`;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const fade = (p: number, from: number, to: number) => clamp01((p - from) / (to - from));
+const smooth = (t: number) => {
+  const x = clamp01(t);
+  return x * x * (3 - 2 * x);
+};
 
 function ArrowUpRight({ className }: { className?: string }) {
   return (
@@ -41,19 +54,24 @@ function ArrowUpRight({ className }: { className?: string }) {
   );
 }
 
-function CtaRow({ lang }: { lang: string }) {
+const CTA_FOCUS =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c6ff33] focus-visible:ring-offset-2 focus-visible:ring-offset-black';
+
+/** The one CTA pair used by both the hero copy and the scene-B dock. */
+function CtaRow({ lang, compact = false }: { lang: string; compact?: boolean }) {
+  const height = compact ? 'h-11' : 'h-[52px]';
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
       <a
         href="#projects"
-        className="group inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold tracking-wide text-black transition-transform duration-300 hover:scale-[1.03]"
+        className={`group inline-flex ${height} w-full items-center justify-center gap-2 rounded-full bg-[#c6ff33] px-6 text-sm font-black tracking-wide text-black transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_36px_-8px_rgba(198,255,51,0.55)] sm:w-auto ${CTA_FOCUS}`}
       >
         <LocText idText="Lihat karya saya" enText="View my work" lang={lang} />
         <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       </a>
       <a
         href="#contact"
-        className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-bold tracking-wide text-white transition-colors duration-300 hover:bg-white/20"
+        className={`inline-flex ${height} w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/5 px-6 text-sm font-bold tracking-wide text-white backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/15 sm:w-auto ${CTA_FOCUS}`}
       >
         <LocText idText="Hubungi saya" enText="Get in touch" lang={lang} />
       </a>
@@ -61,22 +79,29 @@ function CtaRow({ lang }: { lang: string }) {
   );
 }
 
-function IntroCard({ profile, lang }: { profile: Profile; lang: string }) {
+/** Scene A copy: bare text column, hierarchy by type scale only. */
+function IntroCopy({ profile, lang }: { profile: Profile; lang: string }) {
   return (
-    <div className="max-w-2xl rounded-[2rem] border border-white/15 bg-[#0a0614]/40 px-7 py-8 shadow-[0_32px_80px_-32px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:px-10 sm:py-10">
-      <div className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/10 px-4 py-1.5">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-lime opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-lime" />
+    <div className="max-w-[560px]">
+      <div className="hero-load flex flex-wrap items-center gap-x-4 gap-y-3" style={{ animationDelay: '0ms' }}>
+        <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 backdrop-blur-sm">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#c6ff33] opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#c6ff33]" />
+          </span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/85">
+            <LocText idText={profile.status} enText={profile.statusEn} lang={lang} />
+          </span>
         </span>
-        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/85"><LocText idText={profile.status} enText={profile.statusEn} lang={lang} /></span>
+        <span className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-[#c6ff33]">
+          {profile.name} · {profile.locationShort}
+        </span>
       </div>
 
-      <p className="mb-4 font-mono text-[11px] font-bold uppercase tracking-[0.26em] text-lime/90 sm:text-xs">
-        {profile.name} · {profile.locationShort}
-      </p>
-
-      <h1 className="mb-5 font-display text-[clamp(2.6rem,6.2vw,4.6rem)] font-black leading-[1.02] tracking-[-0.03em] text-white">
+      <h1
+        className="hero-load mt-6 font-display text-[clamp(40px,5.4vw,88px)] font-black leading-[1.02] tracking-[-0.03em] text-white"
+        style={{ animationDelay: '70ms' }}
+      >
         {lang === 'id' ? (
           <>
             Saya menjaga{' '}
@@ -98,37 +123,67 @@ function IntroCard({ profile, lang }: { profile: Profile; lang: string }) {
         )}
       </h1>
 
-      <p className="mb-3 font-display text-base font-medium text-white/85 sm:text-lg"><LocText idText={profile.primaryRole} enText={profile.primaryRoleEn} lang={lang} /></p>
-      <p className="mb-8 max-w-lg text-sm leading-relaxed text-white/70 sm:text-base"><LocText idText={profile.heroIntro} enText={profile.heroIntroEn} lang={lang} /></p>
-
-      <CtaRow lang={lang} />
-    </div>
-  );
-}
-
-function OutroCard({ profile, lang }: { profile: Profile; lang: string }) {
-  return (
-    <div className="w-full max-w-lg rounded-[1.5rem] border border-white/15 bg-[#0a0614]/45 px-6 py-6 text-center shadow-[0_24px_60px_-24px_rgba(0,0,0,0.8)] backdrop-blur-2xl sm:px-8">
-      <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-lime/90">
-        <LocText idText={profile.focus} enText={profile.focusEn} lang={lang} />
+      <p className="hero-load mt-5 font-display text-xl font-medium text-white/90 sm:text-2xl" style={{ animationDelay: '140ms' }}>
+        <LocText idText={profile.primaryRole} enText={profile.primaryRoleEn} lang={lang} />
       </p>
-      <p className="mb-5 font-display text-xl font-bold leading-snug text-white sm:text-2xl">
-        <LocText idText="Kamu sampai di layarnya. Karyanya tinggal satu klik lagi." enText="You made it to the screen. The work is one click away." lang={lang} />
+
+      <p className="hero-load mt-4 line-clamp-2 max-w-[46ch] text-base leading-relaxed text-white/75" style={{ animationDelay: '210ms' }}>
+        <LocText idText={profile.heroIntro} enText={profile.heroIntroEn} lang={lang} />
       </p>
-      <div className="flex justify-center">
+
+      <div className="hero-load mt-8" style={{ animationDelay: '280ms' }}>
         <CtaRow lang={lang} />
       </div>
     </div>
   );
 }
 
+/** Scene B: terminal dock inside the lower third of the CRT glass. */
+function TerminalDock({ profile, lang, shown }: { profile: Profile; lang: string; shown: boolean }) {
+  return (
+    <div
+      className="dock-wrap w-full max-w-[620px] border-t border-white/[0.12] px-1 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 text-left sm:px-2"
+      data-on={shown ? 'true' : 'false'}
+      style={{ background: 'linear-gradient(to top, rgba(7,11,20,0.55), rgba(7,11,20,0) 88%)' }}
+    >
+      <p className="dock-line font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-[#c6ff33]">
+        <LocText idText={profile.focus} enText={profile.focusEn} lang={lang} />
+      </p>
+      <p className="dock-line mt-3 font-display text-[clamp(20px,2.4vw,36px)] font-bold leading-[1.15] text-white">
+        <LocText idText="Kamu sampai di layarnya. Karyanya tinggal satu klik lagi." enText="You made it to the screen. The work is one click away." lang={lang} />
+      </p>
+      <div className="dock-line mt-5">
+        <CtaRow lang={lang} compact />
+      </div>
+    </div>
+  );
+}
+
+const HERO_MOTION_CSS = `
+  .hero-load { opacity: 0; animation: heroLoad 600ms cubic-bezier(.22,1,.36,1) forwards; }
+  @keyframes heroLoad { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .dock-line { opacity: 0; transform: translateY(16px); transition: opacity 600ms cubic-bezier(.22,1,.36,1), transform 600ms cubic-bezier(.22,1,.36,1); }
+  .dock-wrap[data-on='true'] .dock-line { opacity: 1; transform: translateY(0); }
+  .dock-wrap[data-on='true'] .dock-line:nth-child(2) { transition-delay: 60ms; }
+  .dock-wrap[data-on='true'] .dock-line:nth-child(3) { transition-delay: 120ms; }
+  .hint-line { display: block; width: 56px; height: 1px; background: rgba(198,255,51,.85); transform-origin: left center; animation: hintLine 1.8s cubic-bezier(.22,1,.36,1) infinite; }
+  @keyframes hintLine { 0% { transform: scaleX(.25); opacity: .45; } 50% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(.25); opacity: .45; } }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-load { animation: none; opacity: 1; }
+    .dock-line { transition: none; }
+    .hint-line { animation: none; }
+  }
+`;
+
 export default function ScrollHero({ reduced, profile, lang }: { reduced: boolean; profile: Profile; lang: string }) {
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasWrapRef = useRef<HTMLDivElement>(null);
   const introRef = useRef<HTMLDivElement>(null);
   const outroRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
+  const [dockShown, setDockShown] = useState(false);
+  const dockShownRef = useRef(false);
 
   useEffect(() => {
     if (reduced) return;
@@ -145,7 +200,7 @@ export default function ScrollHero({ reduced, profile, lang }: { reduced: boolea
       img.decoding = 'async';
       img.src = frameSrc(i);
       images.push(img);
-      // decode() moves JPEG/WebP decoding off the scroll path.
+      // decode() moves JPEG decoding off the scroll path.
       img
         .decode()
         .catch(() => undefined)
@@ -201,26 +256,58 @@ export default function ScrollHero({ reduced, profile, lang }: { reduced: boolea
     };
 
     const applyCopy = (p: number) => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      // Canvas framing: desktop eases the monitor from the right half back to
+      // centre; smaller screens use a fixed upward shift so the monitor sits
+      // in the top zone and the copy owns the bottom.
+      const wrap = canvasWrapRef.current;
+      if (wrap) {
+        let transform: string;
+        if (vw >= 1024) {
+          const e = smooth(fade(p, 0, SHIFT_SETTLE));
+          const tx = MONITOR_SHIFT_X * vw * (1 - e);
+          const sc = 1 + (MONITOR_SCALE - 1) * (1 - e);
+          transform = `translate3d(${tx.toFixed(1)}px, 0, 0) scale(${sc.toFixed(4)})`;
+        } else if (vw >= 768) {
+          transform = `translate3d(0, ${(-0.1 * vh).toFixed(1)}px, 0) scale(1.06)`;
+        } else {
+          transform = `translate3d(0, ${(-0.14 * vh).toFixed(1)}px, 0) scale(1.12)`;
+        }
+        if (wrap.style.transform !== transform) wrap.style.transform = transform;
+      }
+
       const intro = introRef.current;
       if (intro) {
-        const o = 1 - fade(p, 0.14, 0.34);
+        const e = smooth(fade(p, 0, INTRO_FADE_END));
+        const o = 1 - e;
         intro.style.opacity = o.toFixed(3);
-        intro.style.transform = `translate3d(0, ${(-36 * fade(p, 0.14, 0.34)).toFixed(1)}px, 0)`;
-        intro.style.pointerEvents = o < 0.05 ? 'none' : 'auto';
+        intro.style.transform = `translate3d(0, ${(-40 * e).toFixed(1)}px, 0)`;
+        intro.style.pointerEvents = o < 0.1 ? 'none' : 'auto';
         intro.style.visibility = o <= 0 ? 'hidden' : 'visible';
       }
+
+      const hint = hintRef.current;
+      if (hint) {
+        const o = 1 - fade(p, 0, 0.05);
+        hint.style.opacity = o.toFixed(3);
+        hint.style.visibility = o <= 0 ? 'hidden' : 'visible';
+      }
+
       const outro = outroRef.current;
       if (outro) {
-        const o = fade(p, 0.7, 0.9);
+        const o = fade(p, DOCK_START, DOCK_FADE_END);
         outro.style.opacity = o.toFixed(3);
-        outro.style.transform = `translate3d(0, ${(24 * (1 - o)).toFixed(1)}px, 0)`;
+        outro.style.transform = `translate3d(0, ${(16 * (1 - o)).toFixed(1)}px, 0)`;
         outro.style.pointerEvents = o > 0.6 ? 'auto' : 'none';
         outro.style.visibility = o <= 0 ? 'hidden' : 'visible';
       }
-      const hint = hintRef.current;
-      if (hint) hint.style.opacity = (1 - fade(p, 0.01, 0.07)).toFixed(3);
-      const bar = barRef.current;
-      if (bar) bar.style.transform = `scaleX(${p.toFixed(4)})`;
+      const ds = p >= DOCK_START;
+      if (ds !== dockShownRef.current) {
+        dockShownRef.current = ds;
+        setDockShown(ds);
+      }
     };
 
     const tick = (now: number) => {
@@ -254,62 +341,77 @@ export default function ScrollHero({ reduced, profile, lang }: { reduced: boolea
 
   if (reduced) {
     return (
-      <section id="top" className="relative flex min-h-svh items-center overflow-hidden bg-[#050208]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={frameSrc(0)} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#050208]/70 via-[#050208]/25 to-transparent" aria-hidden="true" />
-        <div className="relative mx-auto w-full max-w-[82rem] px-5 py-28 sm:px-8">
-          <IntroCard profile={profile} lang={lang} />
-        </div>
-      </section>
+      <>
+        <section id="top" className="relative flex min-h-dvh items-end overflow-hidden bg-[#050208] lg:items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={frameSrc(0)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="hero-scrim" aria-hidden="true" />
+          <div className="relative mx-auto grid w-full max-w-[1280px] grid-cols-12 px-[clamp(20px,5vw,80px)] py-24">
+            <div className="col-span-12 lg:col-span-5">
+              <IntroCopy profile={profile} lang={lang} />
+            </div>
+          </div>
+        </section>
+        <style jsx>{HERO_MOTION_CSS}</style>
+      </>
     );
   }
 
   return (
-    <section id="top" ref={sectionRef} className="relative bg-[#0b101f]" style={{ height: '400vh' }}>
-      <div className="sticky top-0 h-svh overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 h-full w-full"
-          style={{ backgroundImage: `url(${frameSrc(0)})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-          aria-hidden="true"
-        />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[#050208]/60 to-transparent" aria-hidden="true" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#000000] via-[#000000]/35 to-transparent" aria-hidden="true" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_45%,transparent_55%,rgba(2,0,8,0.45)_100%)]" aria-hidden="true" />
+    <>
+      <section id="top" ref={sectionRef} className="relative h-[400svh] bg-[#0b101f]">
+        <div className="sticky top-0 h-dvh overflow-hidden">
+          <div ref={canvasWrapRef} className="absolute inset-0 will-change-transform">
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 block h-full w-full"
+              style={{ backgroundImage: `url(${frameSrc(0)})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+              aria-hidden="true"
+            />
+          </div>
 
-        <div ref={introRef} className="absolute inset-0 flex items-center">
-          <div className="mx-auto w-full max-w-[82rem] px-5 sm:px-8">
-            <IntroCard profile={profile} lang={lang} />
+          <div className="hero-scrim" aria-hidden="true" />
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_45%,transparent_55%,rgba(2,0,8,0.45)_100%)]"
+            aria-hidden="true"
+          />
+
+          <div ref={introRef} className="absolute inset-0">
+            <div className="mx-auto grid h-full w-full max-w-[1280px] grid-cols-12 items-end px-[clamp(20px,5vw,80px)] pb-28 lg:items-center lg:pb-0">
+              <div className="col-span-12 lg:col-span-5">
+                <IntroCopy profile={profile} lang={lang} />
+              </div>
+            </div>
+          </div>
+
+          <div
+            ref={outroRef}
+            className="absolute inset-x-0 bottom-[3.5svh] flex justify-center px-4 lg:bottom-[9svh]"
+            style={{ opacity: 0, visibility: 'hidden' }}
+          >
+            <TerminalDock profile={profile} lang={lang} shown={dockShown} />
+          </div>
+
+          <div
+            ref={hintRef}
+            className="pointer-events-none absolute bottom-8 left-[clamp(20px,5vw,80px)] hidden items-center gap-3 text-white/75 sm:flex"
+          >
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.32em]">
+              <LocText idText="Scroll untuk masuk" enText="Scroll to enter" lang={lang} />
+            </span>
+            <span className="hint-line" aria-hidden="true" />
           </div>
         </div>
 
-        <div ref={outroRef} className="absolute inset-x-0 bottom-[6%] flex justify-center px-5" style={{ opacity: 0, visibility: 'hidden' }}>
-          <OutroCard profile={profile} lang={lang} />
-        </div>
+        <style jsx>{HERO_MOTION_CSS}</style>
+      </section>
 
-        <div ref={hintRef} className="pointer-events-none absolute bottom-9 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 text-white/70">
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.32em]"><LocText idText="Scroll untuk masuk" enText="Scroll to dive in" lang={lang} /></span>
-          <span className="relative block h-9 w-px overflow-hidden bg-white/15">
-            <span className="absolute inset-x-0 top-0 h-1/2 animate-[scrollhint_1.6s_ease-in-out_infinite] bg-white/80" />
-          </span>
-        </div>
-
-        <div className="absolute inset-x-0 bottom-0 h-[3px] bg-white/10" aria-hidden="true">
-          <div ref={barRef} className="h-full w-full origin-left bg-lime" style={{ transform: 'scaleX(0)' }} />
-        </div>
-      </div>
-
-      <style jsx>{`
-        @keyframes scrollhint {
-          0% {
-            transform: translateY(-100%);
-          }
-          100% {
-            transform: translateY(220%);
-          }
-        }
-      `}</style>
-    </section>
+      {/* Clean 120px blend from the hero into the page background. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none relative z-10 -mt-[120px] h-[120px]"
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0), var(--color-surface))' }}
+      />
+    </>
   );
 }
