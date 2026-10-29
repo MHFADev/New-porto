@@ -2,6 +2,11 @@
 
 A colorful, motion-led portfolio for an IT Support specialist and Full-Stack Developer. The experience combines oversized editorial typography, a cursor-reactive loading sequence, responsive horizontal world-scroll storytelling, interactive tilt effects, and accessible reduced-motion fallbacks.
 
+## Highlights
+
+- **Scroll-scrubbed hero**: a 49-frame camera dive into a CRT monitor (original JPG frames in `public/hero-frames/`), rendered on canvas with sub-frame blending and frame-rate independent damping, wrapped in a minimalist glassmorphism layout.
+- **Auto-translation**: content written in Indonesian in the admin panel is translated to English automatically on save and stored alongside the original. Visitors get the site in their region's language automatically (Indonesian and English built in, other languages machine-translated on the fly), with a manual language switcher in the navbar.
+
 ## Run locally
 
 ```bash
