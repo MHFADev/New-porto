@@ -1039,9 +1039,9 @@ function Navbar({ theme, onToggle, i18n }: { theme: string; onToggle: () => void
   const [hidden, setHidden] = useState(false);
   const [active, setActive] = useState('');
   const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const reduced = useReducedMotion();
   const headerRef = useRef<HTMLElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let last = window.scrollY;
@@ -1092,33 +1092,27 @@ function Navbar({ theme, onToggle, i18n }: { theme: string; onToggle: () => void
     };
   }, [reduced]);
 
-  useEffect(() => {
-    const el = panelRef.current;
-    if (!el) return;
-    if (reduced) {
-      el.style.opacity = '1';
-      return;
-    }
-    const anim = animate(el, {
-      opacity: [0, 1],
-      translateY: [-12, 0],
-      duration: 350,
-      ease: 'outQuad',
-    });
-    return () => {
-      anim.pause();
-    };
-  }, [open, reduced]);
+  const MAIN_HREFS = ['#about', '#skills', '#projects', '#story', '#contact'];
+  const mainLinks = NAV.filter((n) => MAIN_HREFS.includes(n.href));
+  const moreLinks = NAV.filter((n) => !MAIN_HREFS.includes(n.href));
+  const linkCls = (href: string) =>
+    `rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
+      active === href.slice(1) ? 'bg-white/10 text-cotton' : 'text-on-surface-variant hover:bg-white/5 hover:text-cotton'
+    }`;
 
   return (
     <>
       <header
         ref={headerRef}
-        className={`fixed top-0 inset-x-0 z-50 transition-[translate,background-color,box-shadow,border-color] duration-500 ${
-          hidden ? '-translate-y-full' : 'translate-y-0'
-        } ${scrolled || open ? 'bg-surface/85 backdrop-blur-xl border-b border-line-strong shadow-[0_8px_30px_-12px_rgba(0,0,0,0.4)]' : 'bg-transparent border-b border-transparent'}`}
+        className={`fixed inset-x-0 top-4 z-50 flex justify-center px-4 transition-transform duration-500 ${
+          hidden && !open ? '-translate-y-[160%]' : 'translate-y-0'
+        }`}
       >
-        <div className="mx-auto max-w-6xl px-5 sm:px-8 h-16 flex items-center justify-between">
+        <div
+          className={`flex h-14 w-full max-w-[920px] items-center gap-2 rounded-full border border-white/10 bg-surface/70 px-3 backdrop-blur-[16px] transition-shadow duration-500 ${
+            scrolled ? 'shadow-[0_22px_55px_-18px_rgba(0,0,0,0.7)]' : 'shadow-[0_14px_40px_-18px_rgba(0,0,0,0.55)]'
+          }`}
+        >
           <a href="#top" className="brand-badge font-display font-black text-lg text-ink tracking-tight">
             hilmi<span>.</span>
             <span className="hidden sm:inline font-mono text-[10px] font-normal text-on-surface-variant/60 ml-2">
@@ -1126,29 +1120,49 @@ function Navbar({ theme, onToggle, i18n }: { theme: string; onToggle: () => void
             </span>
           </a>
 
-          <nav className="hidden md:flex items-center gap-1">
-            {NAV.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className={`group relative text-sm font-medium px-3 py-2 transition-colors ${
-                  active === item.href.slice(1)
-                    ? 'text-primary-container'
-                    : 'text-on-surface-variant hover:text-cotton'
-                }`}
-              >
+          <nav className="mx-auto hidden items-center gap-1 lg:flex" aria-label="Primary">
+            {mainLinks.map((item) => (
+              <a key={item.href} href={item.href} className={linkCls(item.href)}>
                 {i18n.tx(item.key)}
-                <span
-                  className={`absolute left-3 right-3 bottom-0.5 h-px bg-primary-container transition-transform duration-300 origin-left ${
-                    active === item.href.slice(1) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                  }`}
-                  aria-hidden="true"
-                />
               </a>
             ))}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMoreOpen((v) => !v)}
+                aria-haspopup="true"
+                aria-expanded={moreOpen}
+                className={`inline-flex items-center gap-1.5 ${linkCls('#more')}`}
+              >
+                {i18n.tx('nav.more')}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} aria-hidden="true">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+              {moreOpen ? (
+                <>
+                  <button type="button" aria-hidden="true" tabIndex={-1} className="fixed inset-0 z-40 cursor-default" onClick={() => setMoreOpen(false)} />
+                  <div className="absolute right-0 top-[calc(100%+12px)] z-50 w-52 rounded-2xl border border-white/10 bg-surface/95 p-2 shadow-2xl backdrop-blur-[16px]">
+                    {moreLinks.map((item) => (
+                      <a
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMoreOpen(false)}
+                        className={`flex min-h-[44px] items-center justify-between rounded-xl px-3 text-sm transition-colors hover:bg-white/5 ${
+                          active === item.href.slice(1) ? 'font-bold text-primary-container' : 'text-on-surface-variant'
+                        }`}
+                      >
+                        {i18n.tx(item.key)}
+                        <span className="font-mono text-[10px] text-on-surface-variant/50" aria-hidden="true">→</span>
+                      </a>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+            </div>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 ml-auto lg:ml-0">
             <LangButton i18n={i18n} />
             <button
               onClick={onToggle}
@@ -1159,44 +1173,62 @@ function Navbar({ theme, onToggle, i18n }: { theme: string; onToggle: () => void
             </button>
             <a
               href="#contact"
-              className="hidden md:inline-flex items-center gap-2 rounded-full border-2 border-ink bg-yellow text-ink px-5 py-2.5 text-sm font-black shadow-[4px_5px_0_var(--color-ink)] hover:-translate-y-0.5 transition-transform"
+              className="inline-flex h-10 items-center gap-2 rounded-full border-2 border-ink bg-yellow text-ink px-4 text-sm font-black shadow-[3px_4px_0_var(--color-ink)] hover:-translate-y-0.5 transition-transform"
             >
               <LocText idText="Rekrut saya" enText="Hire me" lang={i18n.lang} />
             </a>
             <button
-              onClick={() => setOpen((o) => !o)}
-              aria-label="Toggle menu"
+              onClick={() => setOpen(true)}
+              aria-label="Open menu"
               aria-expanded={open}
-              className="md:hidden w-10 h-10 rounded-full border border-line-strong flex items-center justify-center text-on-surface-variant"
+              className="lg:hidden w-10 h-10 rounded-full border border-line-strong flex items-center justify-center text-on-surface-variant"
             >
-              {open ? <XIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
+              <MenuIcon className="w-5 h-5" />
             </button>
           </div>
         </div>
       </header>
 
-      {open && (
-        <div
-          ref={panelRef}
-          className="md:hidden fixed top-16 inset-x-0 z-40 border-b border-line-strong bg-surface/95 backdrop-blur-xl"
-        >
-          <nav className="px-6 py-5 flex flex-col gap-1">
+      {open ? (
+        <div className="fixed inset-0 z-[70] flex flex-col bg-surface/95 backdrop-blur-2xl lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+          <div className="flex h-20 items-center justify-between px-5">
+            <a href="#top" onClick={() => setOpen(false)} className="brand-badge font-display font-black text-lg text-ink tracking-tight">
+              hilmi<span>.</span>
+            </a>
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Close menu"
+              className="w-11 h-11 rounded-full border border-line-strong flex items-center justify-center text-cotton"
+            >
+              <XIcon className="w-5 h-5" />
+            </button>
+          </div>
+          <nav className="flex flex-1 flex-col overflow-y-auto px-6 py-2" aria-label="Menu">
             {NAV.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center justify-between py-3 text-base font-medium border-b border-line last:border-0 ${
+                className={`flex items-center justify-between py-4 text-3xl font-display font-black tracking-tight border-b border-line ${
                   active === item.href.slice(1) ? 'text-primary-container' : 'text-cotton'
                 }`}
               >
                 {i18n.tx(item.key)}
-                <span className="font-mono text-[10px] text-on-surface-variant/50">→</span>
+                <span className="font-mono text-sm text-on-surface-variant/50" aria-hidden="true">→</span>
               </a>
             ))}
           </nav>
+          <div className="px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            <a
+              href="#contact"
+              onClick={() => setOpen(false)}
+              className="flex h-[52px] items-center justify-center rounded-full border-2 border-ink bg-yellow text-ink font-display text-base font-black shadow-[4px_5px_0_var(--color-ink)]"
+            >
+              <LocText idText="Rekrut saya" enText="Hire me" lang={i18n.lang} />
+            </a>
+          </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }
@@ -2153,7 +2185,7 @@ function ScrollChrome() {
     <>
       <div
         ref={barRef}
-        className="fixed top-0 left-0 right-0 z-[60] h-[3px] origin-left bg-primary-container"
+        className="fixed top-0 left-0 right-0 z-[60] h-[2px] origin-left bg-gradient-to-r from-[#7d39eb] to-[#c6ff33]"
         style={{ transform: 'scaleX(0)' }}
         aria-hidden="true"
       />
