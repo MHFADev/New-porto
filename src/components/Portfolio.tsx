@@ -9,6 +9,7 @@ import type { JSAnimation, ScrollObserver } from 'animejs';
 import { DEFAULT_PROFILE } from '@/lib/profile';
 import type { Profile } from '@/lib/profile';
 import PhysicsWrapper from '@/components/PhysicsWrapper';
+import ScrollHero from '@/components/ScrollHero';
 
 const NAV = [
   { label: 'About', href: '#about' },
@@ -1255,192 +1256,6 @@ function GlobeScene({ reduced, location }: { reduced: boolean; location: string 
   );
 }
 
-function Hero({ reduced, ready, profile }: { reduced: boolean; ready: boolean; profile: Profile }) {
-  const heroRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const el = heroRef.current;
-    if (!el) return;
-    if (!ready) return;
-    if (reduced) {
-      el.querySelectorAll<HTMLElement>('[data-hero]').forEach((n) => {
-        n.style.opacity = '1';
-        n.style.transform = 'none';
-      });
-      return;
-    }
-    const targets = el.querySelectorAll<HTMLElement>('[data-hero]');
-    const anim = animate(targets, {
-      opacity: [0, 1],
-      translateY: [48, 0],
-      duration: 1100,
-      delay: stagger(90, { start: 200 }),
-      ease: 'outExpo',
-    });
-    return () => {
-      anim.pause();
-    };
-  }, [ready, reduced]);
-
-  useEffect(() => {
-    const el = heroRef.current;
-    if (!el) return;
-    if (reduced) return;
-    const cleanup: (() => void)[] = [];
-    el.querySelectorAll<HTMLElement>('[data-parallax]').forEach((t) => {
-      const speed = parseFloat(t.dataset.parallax || '0');
-      const obs: ScrollObserver = onScroll({
-        target: t,
-        sync: 30,
-        enter: 'top 120%',
-        leave: 'top -80%',
-        onUpdate: (self) => {
-          t.style.transform = `translate3d(0, ${(-280 * speed * self.progress).toFixed(2)}px, 0)`;
-        },
-      });
-      cleanup.push(() => obs.revert());
-    });
-    return () => cleanup.forEach((fn) => fn());
-  }, [reduced]);
-
-  // Scroll-scrubbed exit: --hero-p (0 → 1) drives the copy drifting up and the globe tipping away.
-  const heroNear = useNearViewport(heroRef, '10% 0px');
-  useScrollFrame(() => {
-    const el = heroRef.current;
-    if (!el) return;
-    el.style.setProperty('--hero-p', clamp01(window.scrollY / Math.max(1, el.offsetHeight)).toFixed(3));
-  }, !reduced && heroNear);
-
-  useEffect(() => {
-    const el = heroRef.current;
-    if (!el) return;
-    if (reduced) return;
-    const orb = el.querySelector<HTMLElement>('[data-bob]');
-    if (!orb) return;
-    const anim = animate(orb, {
-      translateY: [0, -22],
-      duration: 4200,
-      ease: 'inOutSine',
-      direction: 'alternate',
-      loop: true,
-    });
-    return () => {
-      anim.pause();
-    };
-  }, [reduced]);
-
-  return (
-    <section id="top" ref={heroRef} className="hero-playground relative min-h-screen flex items-center overflow-hidden pt-16">
-      <AnimatedRays />
-      <div className="absolute inset-0 playground-grid pointer-events-none" aria-hidden="true" />
-      <div
-        data-parallax="0.35"
-        className="hero-blob hero-blob-pink absolute -top-44 -right-32 w-[42rem] h-[42rem] rounded-full pointer-events-none"
-        aria-hidden="true"
-      />
-      <div
-        data-parallax="0.18"
-        className="hero-blob hero-blob-blue absolute bottom-[-32%] left-[-18%] w-[40rem] h-[40rem] rounded-full pointer-events-none"
-        aria-hidden="true"
-      />
-      <div
-        data-bob
-        className="absolute top-[19%] left-[5%] text-[clamp(4rem,10vw,9rem)] font-display font-black text-cotton/[0.035] -rotate-12 pointer-events-none"
-        aria-hidden="true"
-      >HELLO!</div>
-      <div
-        data-bob
-        className="absolute bottom-[20%] right-[7%] text-[clamp(3rem,7vw,7rem)] font-display font-black text-cotton/[0.04] rotate-12 pointer-events-none"
-        style={{ animationDelay: '-2.1s' }}
-        aria-hidden="true"
-      >CREATE</div>
-
-      <div className="relative mx-auto max-w-[82rem] px-5 sm:px-8 w-full grid lg:grid-cols-[1.08fr_0.92fr] gap-12 lg:gap-8 items-center py-24 sm:py-28">
-        <div className="hero-exit-copy">
-          <div
-            data-hero
-            style={{ opacity: 0 }}
-            className="hero-pill inline-flex items-center gap-2.5 rounded-full border-2 border-ink bg-lime px-4 py-2 mb-8 text-ink"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-active opacity-60" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-active" />
-            </span>
-            <span className="text-xs font-bold tracking-wide">
-              {profile.status.toUpperCase()}
-            </span>
-          </div>
-
-          <p data-hero style={{ opacity: 0 }} className="font-mono text-xs sm:text-sm font-bold tracking-[0.24em] text-cyan mb-5 uppercase">
-            {profile.name} · {profile.locationShort}
-          </p>
-
-          <h1 className="font-display font-black tracking-[-0.055em] leading-[0.92] text-[clamp(3.7rem,9.2vw,7.5rem)] text-cotton mb-7 max-w-4xl">
-            <span data-hero style={{ opacity: 0 }} className="block overflow-hidden">
-              <span className="block">I KEEP</span>
-            </span>
-            <span data-hero style={{ opacity: 0 }} className="block overflow-hidden">
-              <span className="block"><span className="hero-word hero-word-pink">SYSTEMS</span> HAPPY</span>
-            </span>
-            <span data-hero style={{ opacity: 0 }} className="block overflow-hidden">
-              <span className="block">&amp; <span className="hero-word hero-word-yellow">IDEAS</span> ALIVE.</span>
-            </span>
-          </h1>
-
-          <p data-hero style={{ opacity: 0 }} className="font-display font-medium text-lg sm:text-xl text-on-surface-variant mb-5">
-            <RoleRotator roles={profile.roles.length ? profile.roles : [profile.primaryRole]} />
-          </p>
-
-          <p data-hero style={{ opacity: 0 }} className="text-base sm:text-lg text-on-surface-variant/90 max-w-xl leading-relaxed mb-10">
-            {profile.heroIntro}
-          </p>
-
-          <div data-hero style={{ opacity: 0 }} className="flex flex-wrap items-center gap-4 mb-12">
-            <Magnetic>
-              <a
-                href="#projects"
-                className="cartoon-button cartoon-button-primary group inline-flex items-center gap-2.5 rounded-full px-7 py-3.5 text-sm font-black tracking-wide"
-              >
-                View my work
-                <ArrowUpRightIcon className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </a>
-            </Magnetic>
-            <Magnetic>
-              <a
-                href="#contact"
-                className="cartoon-button group inline-flex items-center gap-2.5 rounded-full px-7 py-3.5 text-sm font-black tracking-wide text-cotton"
-              >
-                Get in touch
-              </a>
-            </Magnetic>
-          </div>
-
-          <div data-hero style={{ opacity: 0 }} className="flex flex-wrap items-center gap-3 font-mono text-[11px] font-bold tracking-[0.16em] text-on-surface-variant">
-            <span className="mini-sticker bg-pink text-ink">IT SUPPORT</span>
-            <span className="mini-sticker bg-cyan text-ink">FULL-STACK</span>
-            <span className="mini-sticker bg-yellow text-ink">SYSTEMS</span>
-          </div>
-        </div>
-
-        <div data-hero style={{ opacity: 0 }} className="relative min-h-[27rem] sm:min-h-[34rem] lg:min-h-[40rem] flex items-center justify-center">
-          <div className="hero-exit-globe">
-            <GlobeScene reduced={reduced} location={profile.locationShort} />
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute bottom-7 left-1/2 -translate-x-1/2">
-        <div data-hero style={{ opacity: 0 }} className="flex flex-col items-center gap-2 text-on-surface-variant/60">
-          <span className="text-[10px] font-mono tracking-[0.3em]">SCROLL</span>
-          <span className="w-px h-10 overflow-hidden relative">
-            <span className="absolute inset-0 animate-[scrollline_1.6s_ease-in-out_infinite] bg-primary-container" />
-          </span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function About({ profile }: { profile: Profile }) {
   const facts = [
     { label: 'Name', value: profile.name },
@@ -2338,7 +2153,7 @@ export default function Portfolio() {
       <Navbar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
 
       <main className="relative z-10">
-        <Hero reduced={reduced} ready={introReady} profile={profile} />
+        <ScrollHero reduced={reduced} profile={profile} />
         <Marquee items={MARQUEE_ITEMS} />
         <About profile={profile} />
         <Skills />
