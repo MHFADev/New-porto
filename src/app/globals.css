@@ -610,3 +610,40 @@ h1, h2, h3 { text-wrap: balance; }
   .physics-screw-3 { top: calc(var(--physics-floor-y, 22rem) - 1rem); right: -.7rem; }
   .physics-hint { right: .25rem; font-size: .48rem; }
 }
+
+/* ------------------------------------------------------------------ */
+/* ScrollHero framing (2026 redesign). The scrim gives the bare text   */
+/* column its contrast over the moving frames; tune via the variables. */
+/* ------------------------------------------------------------------ */
+:root {
+  --hero-scrim-opacity: 0.88;
+  --hero-monitor-shift: 16%;
+}
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(7, 11, 20, var(--hero-scrim-opacity)) 0%,
+    rgba(7, 11, 20, 0.5) 34%,
+    rgba(7, 11, 20, 0) 58%
+  );
+}
+.hero-scrim::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+@media (max-width: 1023.5px) {
+  .hero-scrim {
+    background: linear-gradient(
+      to top,
+      rgba(7, 11, 20, 0.93) 0%,
+      rgba(7, 11, 20, 0.6) 42%,
+      rgba(7, 11, 20, 0) 72%
+    );
+  }
+}
