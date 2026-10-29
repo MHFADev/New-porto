@@ -10,15 +10,17 @@ import { DEFAULT_PROFILE } from '@/lib/profile';
 import type { Profile } from '@/lib/profile';
 import PhysicsWrapper from '@/components/PhysicsWrapper';
 import ScrollHero from '@/components/ScrollHero';
+import { useI18n, LocText, LANG_OPTIONS } from '@/lib/i18n';
+import type { I18n, UiKey } from '@/lib/i18n';
 
-const NAV = [
-  { label: 'About', href: '#about' },
-  { label: 'Skills', href: '#skills' },
-  { label: 'Activity', href: '#contributions' },
-  { label: 'Certificates', href: '#certificates' },
-  { label: 'Work', href: '#projects' },
-  { label: 'Journey', href: '#story' },
-  { label: 'Contact', href: '#contact' },
+const NAV: { label: string; key: UiKey; href: string }[] = [
+  { label: 'About', key: 'nav.about', href: '#about' },
+  { label: 'Skills', key: 'nav.skills', href: '#skills' },
+  { label: 'Activity', key: 'nav.activity', href: '#contributions' },
+  { label: 'Certificates', key: 'nav.certificates', href: '#certificates' },
+  { label: 'Work', key: 'nav.work', href: '#projects' },
+  { label: 'Journey', key: 'nav.journey', href: '#story' },
+  { label: 'Contact', key: 'nav.contact', href: '#contact' },
 ];
 
 const MARQUEE_ITEMS = [
@@ -967,7 +969,7 @@ function SectionHeading({
   );
 }
 
-function Navbar({ theme, onToggle }: { theme: string; onToggle: () => void }) {
+function Navbar({ theme, onToggle, i18n }: { theme: string; onToggle: () => void; i18n: I18n }) {
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [active, setActive] = useState('');
@@ -1070,7 +1072,7 @@ function Navbar({ theme, onToggle }: { theme: string; onToggle: () => void }) {
                     : 'text-on-surface-variant hover:text-cotton'
                 }`}
               >
-                {item.label}
+                {i18n.tx(item.key)}
                 <span
                   className={`absolute left-3 right-3 bottom-0.5 h-px bg-primary-container transition-transform duration-300 origin-left ${
                     active === item.href.slice(1) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
@@ -1082,6 +1084,17 @@ function Navbar({ theme, onToggle }: { theme: string; onToggle: () => void }) {
           </nav>
 
           <div className="flex items-center gap-3">
+            <select
+              aria-label="Language"
+              value={i18n.choice}
+              onChange={(e) => i18n.setChoice(e.target.value)}
+              className="h-10 max-w-[9.5rem] cursor-pointer rounded-full border border-line-strong bg-transparent px-3 text-sm text-on-surface-variant transition-colors hover:text-cotton"
+            >
+              <option value="auto">{i18n.tx('lang.auto')}</option>
+              {LANG_OPTIONS.map((o) => (
+                <option key={o.code} value={o.code}>{o.label}</option>
+              ))}
+            </select>
             <button
               onClick={onToggle}
               aria-label="Toggle color theme"
@@ -1093,7 +1106,7 @@ function Navbar({ theme, onToggle }: { theme: string; onToggle: () => void }) {
               href="#contact"
               className="hidden md:inline-flex items-center gap-2 rounded-full border-2 border-ink bg-yellow text-ink px-5 py-2.5 text-sm font-black shadow-[4px_5px_0_var(--color-ink)] hover:-translate-y-0.5 transition-transform"
             >
-              Hire me
+              <LocText idText="Rekrut saya" enText="Hire me" lang={i18n.lang} />
             </a>
             <button
               onClick={() => setOpen((o) => !o)}
@@ -1122,7 +1135,7 @@ function Navbar({ theme, onToggle }: { theme: string; onToggle: () => void }) {
                   active === item.href.slice(1) ? 'text-primary-container' : 'text-cotton'
                 }`}
               >
-                {item.label}
+                {i18n.tx(item.key)}
                 <span className="font-mono text-[10px] text-on-surface-variant/50">→</span>
               </a>
             ))}
@@ -1256,7 +1269,7 @@ function GlobeScene({ reduced, location }: { reduced: boolean; location: string 
   );
 }
 
-function About({ profile }: { profile: Profile }) {
+function About({ profile, i18n }: { profile: Profile; i18n: I18n }) {
   const facts = [
     { label: 'Name', value: profile.name },
     { label: 'Role', value: profile.primaryRole },
@@ -1268,19 +1281,19 @@ function About({ profile }: { profile: Profile }) {
     <section id="about" className="relative mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-36 scroll-mt-16">
       <SectionHeading
         index="01"
-        kicker="About"
-        title="Infrastructure meets code."
-        gradient={['code']}
+        kicker={i18n.tx('about.kicker')}
+        title={i18n.tx('about.title')}
+        gradient={i18n.lang === 'id' ? ['kode'] : ['code']}
       />
 
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-20">
         <Reveal delay={120}>
           <div className="about-copy space-y-5 text-on-surface-variant/90 leading-relaxed text-base sm:text-lg">
             <p>
-              I&rsquo;m {profile.name} — {profile.primaryRole}. {profile.about}
+              I&rsquo;m {profile.name} — <LocText idText={profile.primaryRole} enText={profile.primaryRoleEn} lang={i18n.lang} />. <LocText idText={profile.about} enText={profile.aboutEn} lang={i18n.lang} />
             </p>
             <p>
-              {profile.aboutSecondary}
+              <LocText idText={profile.aboutSecondary} enText={profile.aboutSecondaryEn} lang={i18n.lang} />
             </p>
           </div>
 
@@ -1315,15 +1328,15 @@ function About({ profile }: { profile: Profile }) {
   );
 }
 
-function Skills() {
+function Skills({ i18n }: { i18n: I18n }) {
   return (
     <section id="skills" className="relative border-y border-line-strong bg-surface-container/25 scroll-mt-16">
       <div className="mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-36">
         <SectionHeading
           index="02"
-          kicker="Capabilities"
-          title="A toolkit built for reliability."
-          gradient={['reliability']}
+          kicker={i18n.tx('skills.kicker')}
+          title={i18n.tx('skills.title')}
+          gradient={i18n.lang === 'id' ? ['keandalan'] : ['reliability']}
         />
 
         <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5" staggerMs={110}>
@@ -1405,7 +1418,7 @@ function toTitle(name: string) {
 type ContributionCell = { date: string; level: number; week: number; day: number };
 type ContributionData = { username: string; total: number | null; updatedAt: string; cells: ContributionCell[] };
 
-function GitHubContributions({ profile }: { profile: Profile }) {
+function GitHubContributions({ profile, i18n }: { profile: Profile; i18n: I18n }) {
   const [data, setData] = useState<ContributionData | null>(null);
   const [error, setError] = useState(false);
   const username = profile.github.split('/').filter(Boolean).pop() || 'MHFADev';
@@ -1433,7 +1446,7 @@ function GitHubContributions({ profile }: { profile: Profile }) {
   return (
     <section id="contributions" className="relative border-y border-line-strong bg-surface-container/25 scroll-mt-16">
       <div className="mx-auto max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
-        <SectionHeading index="03" kicker="GitHub activity" title="Built in public, one commit at a time." gradient={['public']} />
+        <SectionHeading index="03" kicker={i18n.tx('activity.kicker')} title={i18n.tx('activity.title')} gradient={i18n.lang === 'id' ? ['publik'] : ['public']} />
         <PhysicsWrapper>
           <div className="contribution-panel rounded-[1.75rem] border-[3px] border-ink bg-surface-container/80 p-5 sm:p-8">
           <div className="flex flex-col gap-5 border-b border-line-strong pb-6 sm:flex-row sm:items-end sm:justify-between">
@@ -1482,7 +1495,7 @@ function GitHubContributions({ profile }: { profile: Profile }) {
 }
 
 type ProjectIcon = { slug: string; label: string; url: string; hex?: string; category?: string };
-type Project = { name: string; url: string; title: string; desc: string; techStack: ProjectIcon[] };
+type Project = { name: string; url: string; title: string; desc: string; titleEn?: string; descEn?: string; techStack: ProjectIcon[] };
 
 const FALLBACK_PROJECTS: Project[] = [
   {
@@ -1521,9 +1534,9 @@ const FALLBACK_PROJECTS: Project[] = [
 ];
 
 
-type Certificate = { name: string; url: string; title: string; issuer: string; year: string; desc: string; verifyUrl: string };
+type Certificate = { name: string; url: string; title: string; issuer: string; year: string; desc: string; verifyUrl: string; titleEn?: string; descEn?: string };
 
-function Certificates() {
+function Certificates({ i18n }: { i18n: I18n }) {
   const [certificates, setCertificates] = useState<Certificate[] | null>(null);
   useEffect(() => {
     let live = true;
@@ -1534,13 +1547,13 @@ function Certificates() {
   return (
     <section id="certificates" className="relative border-y border-line-strong bg-surface-container/25 scroll-mt-16">
       <div className="relative z-10 mx-auto max-w-6xl px-5 py-28 sm:px-8 sm:py-36">
-        <SectionHeading index="04" kicker="Credentials" title="Proof behind the practice." gradient={['practice']} />
-        <p className="mb-12 max-w-xl text-base leading-relaxed text-on-surface-variant sm:text-lg">A compact record of the courses and certifications that keep the work grounded in real systems, not just polished screens.</p>
+        <SectionHeading index="04" kicker={i18n.tx('certs.kicker')} title={i18n.tx('certs.title')} gradient={i18n.lang === 'id' ? ['praktik'] : ['practice']} />
+        <p className="mb-12 max-w-xl text-base leading-relaxed text-on-surface-variant sm:text-lg"><LocText idText="Catatan ringkas kursus dan sertifikasi yang menjaga pekerjaan tetap berpijak pada sistem nyata, bukan sekadar layar yang dipoles." enText="A compact record of the courses and certifications that keep the work grounded in real systems, not just polished screens." lang={i18n.lang} /></p>
         {certificates === null ? <div className="py-10 font-mono text-xs text-on-surface-variant/60">LOADING CREDENTIALS…</div> : <div className="grid gap-5 md:grid-cols-2">{certificates.map((certificate, index) => {
           const isPdf = certificate.name.toLowerCase().endsWith('.pdf');
           return <Reveal key={certificate.name} delay={index * 80}><article className="certificate-card group relative overflow-hidden rounded-[1.75rem] border-[3px] border-ink bg-surface-container/80 p-5 sm:p-6">
             <div className="certificate-preview relative mb-6 flex aspect-[16/9] items-center justify-center overflow-hidden rounded-xl border-2 border-ink bg-surface"><span className="certificate-watermark" aria-hidden="true">{isPdf ? 'PDF' : 'CERT'}</span>{isPdf ? <div className="relative z-[1] text-center"><div className="font-display text-5xl font-black text-pink">PDF</div><div className="mt-2 font-mono text-[10px] tracking-[.2em] text-on-surface-variant">CREDENTIAL FILE</div></div> : <img src={certificate.url} alt={`${certificate.title || 'Certificate'} preview`} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />}</div>
-            <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] font-bold tracking-[.18em] text-cyan">{certificate.issuer || 'CERTIFICATION'} {certificate.year ? `· ${certificate.year}` : ''}</p><h3 className="mt-2 font-display text-2xl font-black tracking-tight text-cotton">{certificate.title || toTitle(certificate.name)}</h3></div><span className="certificate-mark" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span></div>{certificate.desc ? <p className="mt-4 text-sm leading-relaxed text-on-surface-variant">{certificate.desc}</p> : null}<div className="mt-6 flex flex-wrap gap-3"><a href={certificate.url} target="_blank" rel="noreferrer" className="cartoon-button inline-flex min-h-11 items-center rounded-full px-4 py-2 text-xs font-black">View certificate</a>{certificate.verifyUrl ? <a href={certificate.verifyUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-line-strong px-4 py-2 text-xs font-bold text-cyan hover:border-cyan">Verify credential</a> : null}</div>
+            <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] font-bold tracking-[.18em] text-cyan">{certificate.issuer || 'CERTIFICATION'} {certificate.year ? `· ${certificate.year}` : ''}</p><h3 className="mt-2 font-display text-2xl font-black tracking-tight text-cotton"><LocText idText={certificate.title || toTitle(certificate.name)} enText={certificate.titleEn} lang={i18n.lang} /></h3></div><span className="certificate-mark" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span></div>{certificate.desc ? <p className="mt-4 text-sm leading-relaxed text-on-surface-variant"><LocText idText={certificate.desc} enText={certificate.descEn} lang={i18n.lang} /></p> : null}<div className="mt-6 flex flex-wrap gap-3"><a href={certificate.url} target="_blank" rel="noreferrer" className="cartoon-button inline-flex min-h-11 items-center rounded-full px-4 py-2 text-xs font-black">View certificate</a>{certificate.verifyUrl ? <a href={certificate.verifyUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-line-strong px-4 py-2 text-xs font-bold text-cyan hover:border-cyan">Verify credential</a> : null}</div>
           </article></Reveal>;
         })}</div>}
       </div>
@@ -1548,7 +1561,7 @@ function Certificates() {
   );
 }
 
-function Projects() {
+function Projects({ i18n }: { i18n: I18n }) {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
@@ -1581,9 +1594,9 @@ function Projects() {
     <section id="projects" className="relative mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-36 scroll-mt-16">
         <SectionHeading
         index="05"
-        kicker="Selected work"
-        title="Things I&rsquo;ve shipped, lately."
-        gradient={['lately']}
+        kicker={i18n.tx('projects.kicker')}
+        title={i18n.tx('projects.title')}
+        gradient={i18n.lang === 'id' ? ['rilis'] : ['lately']}
       />
 
       <div ref={listRef} className="space-y-24 sm:space-y-32">
@@ -1619,13 +1632,13 @@ function Projects() {
                 <div className="flex items-center gap-4 font-mono text-[11px] font-bold tracking-[0.2em] text-on-surface-variant/70 mb-5">
                   <span className="project-number">{String(i + 1).padStart(2, '0')}</span>
                   <span className="h-px w-10 bg-line-strong" aria-hidden="true" />
-                  <span>{p.title || toTitle(p.name)}</span>
+                  <span><LocText idText={p.title || toTitle(p.name)} enText={p.titleEn} lang={i18n.lang} /></span>
                 </div>
                 <h3 className="font-display font-black tracking-[-0.035em] text-3xl sm:text-4xl text-cotton mb-4">
-                  {p.title || toTitle(p.name)}
+                  <LocText idText={p.title || toTitle(p.name)} enText={p.titleEn} lang={i18n.lang} />
                 </h3>
                 {p.desc && (
-                  <p className="text-on-surface-variant/90 leading-relaxed mb-7 max-w-md text-base sm:text-lg">{p.desc}</p>
+                  <p className="text-on-surface-variant/90 leading-relaxed mb-7 max-w-md text-base sm:text-lg"><LocText idText={p.desc} enText={p.descEn} lang={i18n.lang} /></p>
                 )}
                 {p.techStack?.length ? (
                   <div className="flex flex-wrap gap-2" aria-label="Project technology stack">
@@ -1935,7 +1948,7 @@ function WorldScroll() {
   );
 }
 
-function Contact({ profile }: { profile: Profile }) {
+function Contact({ profile, i18n }: { profile: Profile; i18n: I18n }) {
   const socials = [
     { label: 'GitHub', href: profile.github, icon: <GitHubIcon className="w-4 h-4" /> },
     { label: 'LinkedIn', href: profile.linkedin, icon: <LinkedInIcon className="w-4 h-4" /> },
@@ -1950,8 +1963,8 @@ function Contact({ profile }: { profile: Profile }) {
       <div className="mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-40">
         <SectionHeading
           index="07"
-          kicker="Contact"
-          title="Let&rsquo;s build something solid."
+          kicker={i18n.tx('contact.kicker')}
+          title={i18n.tx('contact.title')}
           useFlip
         />
 
@@ -1964,7 +1977,7 @@ function Contact({ profile }: { profile: Profile }) {
             />
             <div className="relative z-[3] max-w-xl">
               <p className="text-ink/80 font-medium text-lg leading-relaxed mb-8">
-                {profile.availability}
+                <LocText idText={profile.availability} enText={profile.availabilityEn} lang={i18n.lang} />
               </p>
               <div className="flex flex-wrap gap-3">
                 {socials.map((s) => (
@@ -2049,7 +2062,7 @@ function SectionRail() {
     <nav aria-label="Page sections" className="section-rail hidden xl:flex">
       {RAIL.map((item) => (
         <a key={item.id} href={`#${item.id}`} aria-current={active === item.id ? 'location' : undefined} className="rail-link">
-          <span className="rail-label">{item.label}</span>
+          <span className="rail-label">{i18n.tx(item.key)}</span>
           <span className="rail-dot" aria-hidden="true" />
         </a>
       ))}
@@ -2103,6 +2116,7 @@ function ScrollChrome() {
 }
 
 export default function Portfolio() {
+  const i18n = useI18n();
   const [theme, setTheme] = useState('dark');
   const [introReady, setIntroReady] = useState(false);
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
@@ -2150,18 +2164,18 @@ export default function Portfolio() {
       <ScrollChrome />
       <SectionRail />
       <div className="fixed inset-0 pointer-events-none z-[1] grain" aria-hidden="true" />
-      <Navbar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
+      <Navbar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} i18n={i18n} />
 
       <main className="relative z-10">
-        <ScrollHero reduced={reduced} profile={profile} />
+        <ScrollHero reduced={reduced} profile={profile} lang={i18n.lang} />
         <Marquee items={MARQUEE_ITEMS} />
-        <About profile={profile} />
-        <Skills />
-        <GitHubContributions profile={profile} />
-        <Certificates />
-        <Projects />
+        <About profile={profile} i18n={i18n} />
+        <Skills i18n={i18n} />
+        <GitHubContributions profile={profile} i18n={i18n} />
+        <Certificates i18n={i18n} />
+        <Projects i18n={i18n} />
         <WorldScroll />
-        <Contact profile={profile} />
+        <Contact profile={profile} i18n={i18n} />
       </main>
 
       <footer className="relative z-10 border-t border-line-strong">
