@@ -54,11 +54,15 @@ export function normalizeProfile(value: unknown): Profile {
   if (!value || typeof value !== 'object') return DEFAULT_PROFILE;
   const input = value as Partial<Profile>;
   const text = <K extends keyof Profile>(key: K) => typeof input[key] === 'string' ? input[key] as string : DEFAULT_PROFILE[key] as string;
+  // The stored role once shipped as "IT Support & Devloper " (typo + trailing
+  // space). Correct it at this boundary so every surface renders it cleanly;
+  // fix the source text in the admin panel when convenient.
+  const fixRole = (v: string) => v.replace(/\s+/g, ' ').replace(/\bDevloper\b/g, 'Developer').trim();
   return {
     name: text('name'),
     shortName: text('shortName'),
-    primaryRole: text('primaryRole'),
-    roles: Array.isArray(input.roles) ? input.roles.filter((role): role is string => typeof role === 'string' && Boolean(role.trim())).slice(0, 8) : DEFAULT_PROFILE.roles,
+    primaryRole: fixRole(text('primaryRole')),
+    roles: Array.isArray(input.roles) ? input.roles.filter((role): role is string => typeof role === 'string' && Boolean(role.trim())).map(fixRole).slice(0, 8) : DEFAULT_PROFILE.roles,
     location: text('location'),
     locationShort: text('locationShort'),
     focus: text('focus'),
@@ -73,7 +77,7 @@ export function normalizeProfile(value: unknown): Profile {
     linkedin: text('linkedin'),
     website: text('website'),
     cvFileName: text('cvFileName'),
-    primaryRoleEn: typeof input.primaryRoleEn === 'string' ? input.primaryRoleEn : '',
+    primaryRoleEn: typeof input.primaryRoleEn === 'string' ? fixRole(input.primaryRoleEn) : '',
     rolesEn: Array.isArray(input.rolesEn) ? input.rolesEn.filter((role): role is string => typeof role === 'string') : [],
     focusEn: typeof input.focusEn === 'string' ? input.focusEn : '',
     statusEn: typeof input.statusEn === 'string' ? input.statusEn : '',
