@@ -5,6 +5,7 @@ import { TECH_ICONS, hasTechIcon, publicTechIcon, techIcon } from '@/lib/tech';
 import { normalizeProfile } from '@/lib/profile';
 import type { Profile } from '@/lib/profile';
 import { isAuthed, readCookie } from '@/lib/auth';
+import { addEnglishTranslations } from '@/lib/translate';
 
 const IMAGE_EXT = /\.(jpe?g|png|webp|avif|gif|svg)$/i;
 const CERT_EXT = /\.(jpe?g|png|webp|avif|gif|pdf)$/i;
@@ -113,6 +114,10 @@ export async function POST(req: NextRequest) {
       };
     }
   }
+
+  // Auto-translate Indonesian content to English so the public site can
+  // serve both languages (originals stay untouched in title/desc/...).
+  await addEnglishTranslations(meta);
 
   const result = await writeMeta(meta);
   if (!result.ok) {
