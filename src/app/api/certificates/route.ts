@@ -18,6 +18,8 @@ export async function GET() {
       issuer: meta.certificates[item.name]?.issuer ?? '',
       year: meta.certificates[item.name]?.year ?? '',
       desc: meta.certificates[item.name]?.desc ?? '',
+      titleEn: meta.certificates[item.name]?.titleEn ?? '',
+      descEn: meta.certificates[item.name]?.descEn ?? '',
       verifyUrl: meta.certificates[item.name]?.verifyUrl ?? '',
     })));
   } catch {
