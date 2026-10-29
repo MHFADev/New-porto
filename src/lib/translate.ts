@@ -2,18 +2,23 @@
  * Server-side translation for admin-saved content and the /api/translate
  * route used by the public site.
  *
- * Provider chain (all free, no key required; first success wins):
- *   1. LibreTranslate, when LIBRETRANSLATE_URL points at an instance. This is
- *      the open-source option: run your own (single Docker container, models
- *      included) and set LIBRETRANSLATE_URL (and LIBRETRANSLATE_KEY if the
- *      instance requires one). Nothing leaves your own infrastructure then.
- *   2. Google Translate's free web endpoint (no key).
- *   3. MyMemory (no key; MYMEMORY_EMAIL raises the free daily quota).
+ * Provider chain (first success wins):
+ *   1. OpenRouter LLM, when OPENROUTER_API_KEY is set (Vercel env). Free
+ *      models give near-human, context-aware translations for every
+ *      language. OPENROUTER_MODEL overrides the primary model; a built-in
+ *      fallback list rides along in the same request. Admin saves batch
+ *      ALL fields into a single LLM call to stay well inside free-tier
+ *      rate limits.
+ *   2. LibreTranslate, when LIBRETRANSLATE_URL points at an instance
+ *      (the self-hosted open-source option, no quota at all).
+ *   3. Google Translate's free web endpoint (no key).
+ *   4. MyMemory (no key; MYMEMORY_EMAIL raises the free daily quota).
  *
  * Every provider result passes an echo guard: an answer identical to the
- * input counts as a failure (some free instances silently echo text back),
- * as does empty or HTML output. All failures are soft: callers fall back to
- * the original text, so a save or page view never breaks over translation.
+ * input counts as a failure (some free services silently echo text back),
+ * as does empty or HTML output. All failures are soft: callers fall back
+ * to the original text, so a save or page view never breaks over
+ * translation.
  */
 
 const ID_WORDS = new Set([
@@ -44,9 +49,11 @@ export function looksIndonesian(text: string): boolean {
   return id >= 2 && id > en;
 }
 
-async function fetchJson(url: string, init?: RequestInit): Promise<unknown | null> {
+/* ---------------- shared helpers ---------------- */
+
+async function fetchJson(url: string, init?: RequestInit, timeoutMs = 7000): Promise<unknown | null> {
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(7000), cache: 'no-store', ...init });
+    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), cache: 'no-store', ...init });
     if (!res.ok) return null;
     return (await res.json()) as unknown;
   } catch {
@@ -56,11 +63,119 @@ async function fetchJson(url: string, init?: RequestInit): Promise<unknown | nul
 
 function usable(out: string | null | undefined, input: string): string | null {
   if (!out) return null;
-  const clean = out.trim();
+  let clean = out.trim();
   if (!clean || clean.startsWith('<')) return null;
+  // Models sometimes wrap the whole answer in quotes; strip one pair.
+  if (clean.length > 1 && clean.startsWith('"') && clean.endsWith('"') && !input.trim().startsWith('"')) {
+    clean = clean.slice(1, -1).trim();
+  }
+  if (!clean) return null;
   if (clean.toLowerCase() === input.trim().toLowerCase()) return null; // echo guard
   return clean;
 }
+
+const LANG_NAME: Record<string, string> = {
+  en: 'English',
+  id: 'Indonesian',
+  ja: 'Japanese',
+  ko: 'Korean',
+  'zh-CN': 'Chinese (Simplified)',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  pt: 'Portuguese',
+  ar: 'Arabic',
+};
+
+/* ---------------- OpenRouter (LLM, free models) ---------------- */
+
+const OPENROUTER_FREE_MODELS = [
+  'openrouter/free',
+  'google/gemma-4-31b-it:free',
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
+  'google/gemma-4-26b-a4b-it:free',
+];
+
+function openRouterModels(): string[] | null {
+  if (!process.env.OPENROUTER_API_KEY) return null;
+  const primary = process.env.OPENROUTER_MODEL?.trim() || OPENROUTER_FREE_MODELS[0];
+  return [primary, ...OPENROUTER_FREE_MODELS.filter((m) => m !== primary)];
+}
+
+async function openRouterChat(system: string, user: string): Promise<string | null> {
+  const models = openRouterModels();
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!models || !key) return null;
+  const data = (await fetchJson(
+    'https://openrouter.ai/api/v1/chat/completions',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'X-Title': 'New-porto auto-translate',
+      },
+      body: JSON.stringify({
+        models,
+        temperature: 0,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      }),
+    },
+    30000,
+  )) as { choices?: { message?: { content?: string } }[] } | null;
+  return data?.choices?.[0]?.message?.content ?? null;
+}
+
+async function viaOpenRouter(text: string, from: string, to: string): Promise<string | null> {
+  const system =
+    `You are a professional translator. Translate the user's text from ${LANG_NAME[from] ?? from} to ${LANG_NAME[to] ?? to}. ` +
+    'Output ONLY the translation: no explanations, no notes, no quotation marks around it. ' +
+    'Preserve names, brands, URLs, numbers, and line breaks exactly.';
+  const out = await openRouterChat(system, text);
+  return usable(out, text);
+}
+
+/**
+ * Batch-translate Indonesian texts to English in ONE LLM call (admin save).
+ * Returns an array aligned with the input: translated string, the original
+ * for texts that are not Indonesian, or null where the model gave nothing
+ * usable (the caller then falls back to the per-text provider chain).
+ * Returns null when OpenRouter is not configured or the call fails.
+ */
+async function translateBatchIdEn(texts: string[]): Promise<(string | null)[] | null> {
+  if (!openRouterModels()) return null;
+  const todo = new Map<number, string>();
+  texts.forEach((t, i) => {
+    if (t.trim() && looksIndonesian(t)) todo.set(i, t);
+  });
+  const base: (string | null)[] = texts.map((t) => (t.trim() ? t : ''));
+  if (todo.size === 0) return base;
+  const payload: Record<string, string> = {};
+  for (const [i, t] of todo) payload[String(i)] = t;
+  const system =
+    'You are a professional translator. Translate every value in the user\'s JSON object from Indonesian to English. ' +
+    'Reply with ONLY a JSON object with the same keys and the translated values. No markdown fences, no explanations. ' +
+    'Preserve names, brands, URLs, and numbers exactly.';
+  const raw = await openRouterChat(system, JSON.stringify(payload));
+  if (!raw) return null;
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(raw.replace(/```(?:json)?/g, '').trim()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+  const out = [...base];
+  for (const [i] of todo) {
+    const v = parsed[String(i)];
+    out[i] = typeof v === 'string' ? usable(v, texts[i]) : null;
+  }
+  return out;
+}
+
+/* ---------------- other free providers ---------------- */
 
 async function viaLibreTranslate(text: string, from: string, to: string): Promise<string | null> {
   const base = (process.env.LIBRETRANSLATE_URL ?? '').replace(/\/+$/, '');
@@ -97,9 +212,12 @@ async function viaMyMemory(text: string, from: string, to: string): Promise<stri
   return usable(data.responseData?.translatedText, text);
 }
 
+/* ---------------- public API ---------------- */
+
 /** Translate one short text with the provider chain; returns null when every provider fails. */
 async function translateChunk(text: string, from: string, to: string): Promise<string | null> {
   return (
+    (await viaOpenRouter(text, from, to)) ??
     (await viaLibreTranslate(text, from, to)) ??
     (await viaGoogle(text, from, to)) ??
     (await viaMyMemory(text, from, to))
@@ -152,40 +270,44 @@ const PROFILE_TEXT_FIELDS = [
 
 /** Fill the *En fields of a Meta object by translating the originals from Indonesian. */
 export async function addEnglishTranslations<T extends MetaLike>(meta: T): Promise<T> {
-  const jobs: Promise<void>[] = [];
-  const run = (fn: () => Promise<void>) => jobs.push(fn());
+  type Task = { text: string; apply: (value: string) => void };
+  const tasks: Task[] = [];
+  const collect = (text: string, apply: (value: string) => void) => tasks.push({ text, apply });
 
   for (const project of Object.values(meta.projects)) {
-    run(async () => {
-      project.titleEn = await translateIdToEn(project.title ?? '');
-    });
-    run(async () => {
-      project.descEn = await translateIdToEn(project.desc ?? '');
-    });
+    collect(project.title ?? '', (v) => { project.titleEn = v; });
+    collect(project.desc ?? '', (v) => { project.descEn = v; });
   }
   for (const cert of Object.values(meta.certificates)) {
-    run(async () => {
-      cert.titleEn = await translateIdToEn(typeof cert.title === 'string' ? cert.title : '');
-    });
-    run(async () => {
-      cert.descEn = await translateIdToEn(typeof cert.desc === 'string' ? cert.desc : '');
-    });
+    collect(typeof cert.title === 'string' ? cert.title : '', (v) => { cert.titleEn = v; });
+    collect(typeof cert.desc === 'string' ? cert.desc : '', (v) => { cert.descEn = v; });
   }
   const profile = meta.profile as Profile & Record<string, unknown>;
   for (const field of PROFILE_TEXT_FIELDS) {
-    run(async () => {
-      const value = profile[field];
-      if (typeof value === 'string') {
-        profile[`${field}En`] = await translateIdToEn(value);
-      }
+    const value = profile[field];
+    if (typeof value === 'string') {
+      collect(value, (v) => { profile[`${field}En`] = v; });
+    }
+  }
+  if (Array.isArray(profile.roles)) {
+    if (!Array.isArray(profile.rolesEn) || profile.rolesEn.length !== profile.roles.length) {
+      profile.rolesEn = [...profile.roles];
+    }
+    profile.roles.forEach((role, idx) => {
+      collect(role, (v) => {
+        if (Array.isArray(profile.rolesEn)) profile.rolesEn[idx] = v;
+      });
     });
   }
-  run(async () => {
-    if (Array.isArray(profile.roles)) {
-      profile.rolesEn = await Promise.all(profile.roles.map((r) => translateIdToEn(r)));
-    }
-  });
 
-  await Promise.all(jobs);
+  // One batched LLM call when OpenRouter is configured; anything it misses
+  // (and every field when it is not) goes through the per-text chain.
+  const batch = await translateBatchIdEn(tasks.map((t) => t.text)).catch(() => null);
+  await Promise.all(
+    tasks.map(async (task, i) => {
+      const fromBatch = batch?.[i];
+      task.apply(fromBatch ?? (await translateIdToEn(task.text)));
+    }),
+  );
   return meta;
 }
