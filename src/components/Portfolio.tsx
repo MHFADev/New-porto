@@ -1748,7 +1748,7 @@ const WORLD_STOPS = [
     title: 'From the workbench up.',
     body: 'Every system I touch gets the same treatment — diagnosed, stabilized, documented.',
     tags: ['Support', 'Troubleshooting', 'Maintenance'],
-    accent: '#ffd84d',
+    accent: '#c6ff33',
   },
   {
     img: '/foto/IMG_20260709_130641.webp',
@@ -1757,7 +1757,7 @@ const WORLD_STOPS = [
     title: 'Where maintenance meets software.',
     body: 'Support tools, dashboards, and full apps — shipped with Next.js & TypeScript.',
     tags: ['Next.js', 'TypeScript', 'Full-Stack'],
-    accent: '#42dcff',
+    accent: '#7d39eb',
   },
   {
     img: '/foto/WhatsApp%20Image%202026-07-09%20at%2012.06.57.webp',
@@ -1766,7 +1766,7 @@ const WORLD_STOPS = [
     title: 'Hands-on support.',
     body: 'Close to the end user, on-site when it counts, calm under pressure.',
     tags: ['IT Support', 'Network', 'On-site'],
-    accent: '#ff5cbb',
+    accent: '#ffffff',
   },
   {
     img: '/foto/WhatsApp%20Image%202026-07-11%20at%2012.08.26.webp',
@@ -1775,7 +1775,7 @@ const WORLD_STOPS = [
     title: 'Keeping systems alive.',
     body: 'Servers, switches, and the connections between them — stable and monitored.',
     tags: ['Infrastructure', 'Server', 'Network'],
-    accent: '#b9ff66',
+    accent: '#a678ff',
   },
 ];
 
