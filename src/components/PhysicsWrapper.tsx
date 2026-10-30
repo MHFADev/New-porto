@@ -38,8 +38,8 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
       if (!width || !height) return;
       let physicsWidth = width;
       let physicsHeight = height;
-      const floorGap = window.innerWidth >= 1024 ? 166 : 112;
-      stage.style.minHeight = `${height + floorGap + 40}px`;
+      const floorGap = window.innerWidth >= 1024 ? 104 : 84;
+      stage.style.minHeight = `${height + floorGap + 16}px`;
       stage.style.setProperty('--physics-floor-y', `${height + floorGap}px`);
 
       const engine = Matter.Engine.create({ enableSleeping: false });
@@ -117,7 +117,7 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
         });
         physicsWidth = nextWidth;
         physicsHeight = nextHeight;
-        stage.style.minHeight = `${nextHeight + floorGap + 40}px`;
+        stage.style.minHeight = `${nextHeight + floorGap + 16}px`;
         stage.style.setProperty('--physics-floor-y', `${nextHeight + floorGap}px`);
       });
       observer.observe(stage);
@@ -174,25 +174,25 @@ export default function PhysicsWrapper({ children, className = '' }: PhysicsWrap
     <div ref={stageRef} className={`physics-wrapper-stage ${className}`}>
       <div ref={bodyRef} className="physics-wrapper-body">
         {children}
+        {SCREW_NAMES.map((label, index) => (
+          <button
+            key={label}
+            type="button"
+            aria-label={released[index] ? `${label} released` : `${label}, turn ${turns[index]} of 4`}
+            aria-pressed={released[index]}
+            data-turns={turns[index]}
+            className={`physics-screw physics-screw-${index} ${released[index] ? 'is-released' : ''}`}
+            onClick={() => turnScrew(index)}
+          >
+            <svg className="physics-screw-icon" viewBox="0 0 32 32" aria-hidden="true">
+              <circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path d="M10 16h12M16 10v12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+            <span className="physics-screw-turns" aria-hidden="true">{turns[index]}/4</span>
+          </button>
+        ))}
       </div>
       <div className="physics-floor" aria-hidden="true" />
-      {SCREW_NAMES.map((label, index) => (
-        <button
-          key={label}
-          type="button"
-          aria-label={released[index] ? `${label} released` : `${label}, turn ${turns[index]} of 4`}
-          aria-pressed={released[index]}
-          data-turns={turns[index]}
-          className={`physics-screw physics-screw-${index} ${released[index] ? 'is-released' : ''}`}
-          onClick={() => turnScrew(index)}
-        >
-          <svg className="physics-screw-icon" viewBox="0 0 32 32" aria-hidden="true">
-            <circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" strokeWidth="2" />
-            <path d="M10 16h12M16 10v12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
-          <span className="physics-screw-turns" aria-hidden="true">{turns[index]}/4</span>
-        </button>
-      ))}
       <div className="physics-hint" aria-hidden="true">UNSCREW TO RELEASE</div>
     </div>
   );
