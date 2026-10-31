@@ -70,21 +70,15 @@ html {
 body {
   font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   background-color: var(--color-surface);
-  background-image:
-    radial-gradient(circle, rgb(255 255 255 / .15) 2px, transparent 2.5px),
-    linear-gradient(to right, rgb(255 255 255 / .055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(255 255 255 / .055) 1px, transparent 1px);
-  background-size: 32px 32px, 72px 72px, 72px 72px;
+  background-image: url("/grid-wavy.svg");
+  background-size: 288px 288px;
   color: var(--color-on-surface);
   overflow-x: hidden;
 }
 
 [data-theme="light"] body {
-  background-image:
-    radial-gradient(circle, rgb(0 0 0 / .16) 2px, transparent 2.5px),
-    linear-gradient(to right, rgb(0 0 0 / .06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(0 0 0 / .06) 1px, transparent 1px);
-  background-size: 32px 32px, 72px 72px, 72px 72px;
+  background-image: url("/grid-wavy-light.svg");
+  background-size: 288px 288px;
 }
 
 .cinematic-loader {
@@ -280,12 +274,12 @@ body {
 
 .world-section { height: 520vh; background: var(--color-surface-dim); }
 .world-grid {
-  opacity: .5;
-  background-image:
-    radial-gradient(circle, var(--color-line-strong) 1.8px, transparent 2.3px),
-    linear-gradient(to right, var(--color-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-line) 1px, transparent 1px);
-  background-size: 32px 32px, 80px 80px, 80px 80px;
+  opacity: .55;
+  background-image: url("/grid-wavy.svg");
+  background-size: 288px 288px;
+}
+[data-theme="light"] .world-grid {
+  background-image: url("/grid-wavy-light.svg");
 }
 .world-grid::after {
   content: "";
@@ -493,17 +487,6 @@ body {
   to { background-position: 250% 0; }
 }
 
-.grain::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.5;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 180px 180px;
-  mix-blend-mode: soft-light;
-  z-index: 2;
-}
 
 @keyframes rays-spin { to { transform: rotate(360deg); } }
 
@@ -643,13 +626,6 @@ h1, h2, h3 { text-wrap: balance; }
     rgba(7, 11, 20, 0.5) 34%,
     rgba(7, 11, 20, 0) 58%
   );
-}
-.hero-scrim::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
 }
 @media (max-width: 1023.5px) {
   .hero-scrim {
