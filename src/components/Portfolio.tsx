@@ -775,7 +775,7 @@ function Marquee({ items }: { items: string[] }) {
 
   return (
     <div
-      className="relative border-y border-line-strong bg-surface-container/40 py-5 overflow-hidden mask-x select-none"
+      className="relative border-y border-line-strong py-5 overflow-hidden mask-x select-none"
       aria-hidden="true"
     >
       <div ref={trackRef} className="flex w-max">
@@ -1417,7 +1417,7 @@ function About({ profile, i18n }: { profile: Profile; i18n: I18n }) {
 
 function Skills({ i18n }: { i18n: I18n }) {
   return (
-    <section id="skills" className="relative border-y border-line-strong bg-surface-container/25 scroll-mt-16">
+    <section id="skills" className="relative border-y border-line-strong scroll-mt-16">
       <div className="mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-36">
         <SectionHeading
           index="02"
@@ -1531,7 +1531,7 @@ function GitHubContributions({ profile, i18n }: { profile: Profile; i18n: I18n }
   }, [username]);
 
   return (
-    <section id="contributions" className="relative border-y border-line-strong bg-surface-container/25 scroll-mt-16">
+    <section id="contributions" className="relative border-y border-line-strong scroll-mt-16">
       <div className="mx-auto max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
         <SectionHeading index="03" kicker={i18n.tx('activity.kicker')} title={i18n.tx('activity.title')} gradient={i18n.lang === 'id' ? ['publik'] : ['public']} />
         <PhysicsWrapper>
@@ -1632,7 +1632,7 @@ function Certificates({ i18n }: { i18n: I18n }) {
   }, []);
   if (certificates?.length === 0) return null;
   return (
-    <section id="certificates" className="relative border-y border-line-strong bg-surface-container/25 scroll-mt-16">
+    <section id="certificates" className="relative border-y border-line-strong scroll-mt-16">
       <div className="relative z-10 mx-auto max-w-6xl px-5 py-28 sm:px-8 sm:py-36">
         <SectionHeading index="04" kicker={i18n.tx('certs.kicker')} title={i18n.tx('certs.title')} gradient={i18n.lang === 'id' ? ['praktik'] : ['practice']} />
         <p className="mb-12 max-w-xl text-base leading-relaxed text-on-surface-variant sm:text-lg"><LocText idText="Catatan ringkas kursus dan sertifikasi yang menjaga pekerjaan tetap berpijak pada sistem nyata, bukan sekadar layar yang dipoles." enText="A compact record of the courses and certifications that keep the work grounded in real systems, not just polished screens." lang={i18n.lang} /></p>
@@ -2046,7 +2046,7 @@ function Contact({ profile, i18n }: { profile: Profile; i18n: I18n }) {
       .map((link) => ({ label: link.label.trim(), href: link.url.trim(), icon: <ArrowUpRightIcon className="w-4 h-4" /> })),
   ].filter((social) => Boolean(social.href));
   return (
-    <section id="contact" className="relative border-t border-line-strong bg-surface-container/25 scroll-mt-16">
+    <section id="contact" className="relative border-t border-line-strong scroll-mt-16">
       <div className="mx-auto max-w-6xl px-5 sm:px-8 py-28 sm:py-40">
         <SectionHeading
           index="07"
