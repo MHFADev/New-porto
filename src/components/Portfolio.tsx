@@ -2250,7 +2250,6 @@ export default function Portfolio() {
       <ScrollMomentum />
       <ScrollChrome />
       <SectionRail i18n={i18n} />
-      <div className="fixed inset-0 pointer-events-none z-[1] grain" aria-hidden="true" />
       <Navbar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} i18n={i18n} />
 
       <main className="relative z-10">
